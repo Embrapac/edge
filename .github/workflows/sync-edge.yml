@@ -23,4 +23,4 @@ jobs:
         run: |
           git remote add rt-embarcados git@github.com:rt-embarcados/grp1_repo.git
           git fetch rt-embarcados
-          git push rt-embarcados main:backend --force-with-lease
+          git push rt-embarcados main:edge --force-with-lease
