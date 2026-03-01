@@ -1,12 +1,13 @@
 from picamera2 import Picamera2
-from picamera2.encoders import JpegEncoder, H264Encoder
-from picamera2.outputs import FileOutput, FfmpegOutput, CircularOutput
+from picamera2.encoders import JpegEncoder
+from picamera2.outputs import FileOutput, FfmpegOutput
 import io
 from threading import Condition
 from flask import Flask, Response
 
 RESOLUTION = (640, 480)
 FRAME_RATE = 30
+OUTPUT_FILE = "recording.mp4"
 
 app = Flask(__name__)
 
@@ -28,7 +29,7 @@ picam2.configure(picam2.create_video_configuration(
 
 encoder = JpegEncoder()
 stream_output = StreamingOutput()
-file_output = FfmpegOutput('recording.mp4', audio=False)
+file_output = FfmpegOutput(OUTPUT_FILE, audio=False)
 
 encoder.output = [FileOutput(stream_output), file_output]
 
