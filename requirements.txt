@@ -1,0 +1,4 @@
+
+ultralytics==8.4.14
+ncnn==1.0.20260114
+opencv-python==4.13.0.92
