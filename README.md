@@ -84,10 +84,28 @@ TBD
 
 `pip install ultralytics ncnn opencv-python`
 
-2) Utilizando script de streming da câmera e OpenCV para exibir o vídeo
+2) Convertendo o modelo treinado para o formato ncnn
 
-TBD
+`yolo export model=box-sizing.pt format=ncnn`
+
+3) Utilizando script de streming da câmera e OpenCV para exibir o vídeo
+
+`python yolo_detect.py --model=box-sizing_ncnn_model --source=picamera1 --resolution=1280x720`
 
 
+# EDGE MONITORING
 
+Criado estrutura no Docker Compose para rodar o **Mosquitto**, **InfluxDB**, **Telegraf** e **Grafana**, para monitoramento dos KPIs do sistema.
+
+Teste inicial do ambiente realizado no mesmo Raspberry Pi 5: publicação de dados no mosquitto para exibição no _dashboard_ do Grafana:
+
+![Grafana](imgs/grafana-poc.png)
+
+Teste realizado local no RPi:
+
+`mosquitto_pub -h localhost -t "sensor/precision" -m "95"`
+
+Teste realizado a partir de outro dispositivo na mesma rede:
+
+`mosquitto_pub -h 192.168.51.10 -t "sensor/precision" -m "95"`
 
