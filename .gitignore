@@ -1,2 +1,14 @@
 # IDE
 .vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+*.log
+
+# Jupyter Notebook
+.ipynb_checkpoints/
