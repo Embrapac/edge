@@ -1,41 +1,72 @@
-# EDGE
+# 📡 EDGE
 
-Repositório para o módulo EDGE, responsável pela conectividade com a nuvem e interfaces com dispositivos como câmera
+Repositório para o módulo EDGE, responsável pela captura de vídeo, processamento de inferência ML, armazenamento em buffer e streaming de dados para a nuvem.
 
-## Dispositivo: Raspberry Pi 5
+## 🖥️ Dispositivo: Raspberry Pi 5
 
-### Apps e Serviços 
+**Especificações:**
+- Processador ARM64 otimizado para visão computacional
+- Suporte nativo para câmeras Picamera2
+- Capacidade de executar modelos YOLO otimizados
 
-* [Servidor VNC][def]
-* [Bibliotecas Python](#bibliotecas-python)
+---
 
-### Integrações
+## 📦 Arquitetura do Projeto
 
-* Câmera de Foto
-* Câmera de Vídeo
+```
+edge/
+├── video_buffer/          # 🎥 Gerenciamento de captura e buffer de vídeo
+│   ├── capture_writer.py  # Captura frames da câmera
+│   ├── uploader.py        # Streaming de frames com retry exponencial
+│   ├── buffer_manager.py  # Gerencia limite de armazenamento
+│   └── storage_policy.py  # Políticas de armazenamento
+├── data_aggregator/       # 📊 Agregação de dados e métricas
+│   ├── aggregator.py      # Processa detecções
+│   ├── subscriber.py      # Consumidor MQTT
+│   └── metrics_calculator.py
+├── inference/             # 🤖 Inferência com modelos ML
+│   ├── model_manager.py   # Carrega e gerencia modelos YOLO
+│   └── model_fetcher.py   # Atualização remota de modelos
+├── shared/                # 🔧 Módulos compartilhados
+│   ├── event_bus.py       # Event bus para comunicação
+│   ├── healthcheck.py     # Monitoramento de saúde
+│   └── logger.py          # Logging estruturado
+├── main.py                # 🚀 Orquestrador principal
+├── config.py              # ⚙️ Configurações
+└── docker-compose.yml     # 📦 Stack de monitoramento
+```
 
-#### Servidor VNC
+---
 
-O servidor VNC já vem nativo do Raspberry Pi OS instalado.
+## 🔧 Dependências e Setup
 
-Para acessar foi feito o teste com [Tiger VNC](https://tigervnc.org/), instalado através da loja de aplicativos Ubuntu 24.04.
+### Apps e Serviços
 
-#### Bibliotecas Python
+| Serviço | Descrição |
+|---------|-----------|
+| **Servidor VNC** | Acesso remoto desktop nativo do Raspberry Pi OS |
+| **Python 3.10+** | Runtime para aplicação |
+| **MediaMTX** | RTSP streaming (opcional) |
 
-Considerando exemplos executados (pasta `examples/`)
+### 📚 Bibliotecas Python Principais
 
-1) python3-picamera2
+**Sistema operacional (exemplos):**
+```bash
+sudo apt install -y python3-picamera2
+```
 
-   Instalado diretamente no sistema operacional: `sudo apt install -y python3-picamera2`
+**Aplicação principal:**
+```bash
+pip install ultralytics ncnn opencv-python httpx influxdb-client paho-mqtt
+```
 
-2) Flask
-
-   Para subir um servidor local
-
-Considerando a aplicação principal:
-
-1) ultralytics: para realizar todo o processamento da biblioteca para visão computacional: YOLO
-2) ncnn: otimiza o modelo treinado para adequação ao processador ARM64 do Raspberry Pi 5
+| Biblioteca | Propósito |
+|-----------|----------|
+| **ultralytics** | YOLO para detecção de objetos |
+| **ncnn** | Otimização de modelos para ARM64 |
+| **opencv-python** | Processamento de imagens |
+| **httpx** | Cliente HTTP assíncrono |
+| **paho-mqtt** | Comunicação MQTT |
    
 
 [def]: #servidor-vnc
