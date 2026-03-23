@@ -7,7 +7,7 @@ class HealthCheck:
         self.status = "healthy"
 
     def check(self):
-        # Placeholder: Add actual health checks (e.g., camera, MQTT, storage)
+        # TODO Placeholder: Add actual health checks (e.g., camera, MQTT, storage)
         try:
             # Simulate checks
             return {"status": "healthy", "details": "All systems operational"}

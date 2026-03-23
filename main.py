@@ -19,7 +19,19 @@ async def main():
     
     # Módulo 1: Buffer de vídeo
     buffer_mgr = VideoBufferManager(Config.VIDEO_STORAGE_PATH)
-    capture_writer = CaptureWriter(buffer_mgr, event_bus.detection_queue, Config.STREAMER_URL)
+    capture_writer = CaptureWriter(
+        buffer_mgr,
+        event_bus.detection_queue,
+        streamer_url=Config.STREAMER_URL,
+        model_path=Config.DEFAULT_MODEL_PATH,
+        source=Config.VIDEO_SOURCE,
+        resolution=Config.VIDEO_RESOLUTION,
+        threshold=Config.DETECTION_THRESHOLD,
+        show_window=Config.SHOW_DETECTION_WINDOW,
+        record=Config.RECORD_VIDEO,
+        record_path=Config.RECORD_PATH,
+        record_fps=Config.RECORD_FPS,
+    )
 
     # Módulo 2: Agregador
     aggregator = DataAggregator(event_bus.detection_queue, event_bus.output_queue)
@@ -36,7 +48,7 @@ async def main():
         while True:
             status = health_check.check()
             logger.info(f"Health check: {status}")
-            await asyncio.sleep(30)  # Check every 30 seconds
+            await asyncio.sleep(60)  # Check every 60 seconds
 
     # Task for model updates
     # TODO: Check for remote location configuration first

@@ -3,6 +3,9 @@ import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
+from shared.logger import get_struct_logger
+
+logger = get_struct_logger(__name__)
 
 @dataclass
 class AggregatedEvent:
@@ -25,7 +28,7 @@ class DataAggregator:
 
     async def process_pubsub_event(self, event: dict):
         aggregated = AggregatedEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.timezone.utc),
             pubsub_data=event,
             detections=self._latest_detections.copy(),
         )
@@ -34,6 +37,7 @@ class DataAggregator:
 
     def _calculate(self, event: AggregatedEvent) -> dict:
         # Ex: contagem de objetos, score médio, correlação com dados MQTT
+        logger.debug(f"Calculating metrics for event with {len(event.detections)} detections and pubsub data: {event.pubsub_data}")
         count = len(event.detections)
         avg_confidence = (
             sum(d.get("confidence", 0) for d in event.detections) / count

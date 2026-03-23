@@ -38,6 +38,14 @@ edge/
 
 ---
 
+## Protocolos de Integração
+
+| Origem | Destino | Protocolo | Detalhes |
+|--------|---------|-----------|----------|
+| MCU (Microcontrolador) | EDGE | MQTT | _/embrapac/mcu-data_ |
+| EDGE | Nuvem | MQTT | /embrapac/monitoring |
+
+
 ## 🔧 Dependências e Setup
 
 ### Apps e Serviços
