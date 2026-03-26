@@ -24,7 +24,9 @@ class DataAggregator:
         """Mantém a lista de detecções recentes atualizada."""
         while True:
             detection = await self._detection_queue.get()
+            logger.info(f"Received detection on class {detection.get('class', 'unknown')} with confidence {detection.get('confidence', 0)} at {datetime.fromtimestamp(detection.get('timestamp', 'unknown'))}")
             self._latest_detections = detection  # substitui pela janela mais recente
+            print(f"Updated latest detections: {self._latest_detections}")
 
     async def process_pubsub_event(self, event: dict):
         aggregated = AggregatedEvent(
@@ -38,6 +40,16 @@ class DataAggregator:
     def _calculate(self, event: AggregatedEvent) -> dict:
         # Ex: contagem de objetos, score médio, correlação com dados MQTT
         logger.debug(f"Calculating metrics for event with {len(event.detections)} detections and pubsub data: {event.pubsub_data}")
+
+        for d in event.detections:
+            logger.debug(f"Detection - class: {d.get('class', 'unknown')}, confidence: {d.get('confidence', 0)}, timestamp: {datetime.fromtimestamp(d.get('timestamp', 'unknown'))}")
+        
+        camera_detection_class = event.detections[0].get('class')
+        camera_detection_conf = event.detections[0].get('confidence')
+        camera_detection_time = event.detections[0].get('timestamp')
+        mcu_detection_class = event.pubsub_data.get('class')
+        mcu_detection_time = event.pubsub_data.get('timestamp')
+
         count = len(event.detections)
         avg_confidence = (
             sum(d.get("confidence", 0) for d in event.detections) / count

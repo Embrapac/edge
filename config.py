@@ -6,7 +6,7 @@ class Config:
     DEFAULT_MODEL_PATH = "models/product-sizingv3.pt"
 
     # Inference settings
-    VIDEO_SOURCE = 0  # camera index, or path to video file
+    VIDEO_SOURCE = 1  # camera index, or path to video file
     VIDEO_RESOLUTION = "640x480"  # specify WxH or None to keep native
     DETECTION_THRESHOLD = 0.5
     SHOW_DETECTION_WINDOW = False

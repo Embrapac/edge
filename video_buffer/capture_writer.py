@@ -161,6 +161,7 @@ class CaptureWriter:
                     'class': int(box.cls.item()) if hasattr(box.cls, 'item') else int(box.cls),
                     'confidence': confidence,
                     'bbox': [float(x) for x in box.xyxy.tolist()[0]] if hasattr(box.xyxy, 'tolist') else list(box.xyxy),
+                    'timestamp': time.time(),
                 }
                 detections.append(detection)
         return detections
