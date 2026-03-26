@@ -58,9 +58,12 @@ edge/
 
 ### 📚 Bibliotecas Python Principais
 
-**Sistema operacional (exemplos):**
+**Sistema operacional:**
+
+`libcap-dev` necessário durante instalação das dependências via `pip install` (`picamera2==0.3.34`)
+
 ```bash
-sudo apt install -y python3-picamera2
+sudo apt install -y python3-picamera2 libcap-dev
 ```
 
 **Aplicação principal:**
