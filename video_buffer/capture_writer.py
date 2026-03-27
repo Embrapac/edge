@@ -57,21 +57,7 @@ class CaptureWriter:
 
         self.model = YOLO(self.model_path, task="detect")
 
-        # Open video source
-        source_arg = self.source
-        try:
-            if isinstance(source_arg, str) and source_arg.isdigit():
-                source_arg = int(source_arg)
-            self.cap = cv2.VideoCapture(source_arg)
-        except Exception as e:
-            logger.error(f"Failed to open video source {source_arg}: {e}")
-            return
-
-        if not self.cap.isOpened():
-            logger.error(f"Error: Could not open video source {source_arg}")
-            return
-
-        # Parse resolution
+        # Parse resolution early for source initialization (needed for Picamera)
         res_w, res_h = None, None
         if self.resolution:
             try:
@@ -79,6 +65,45 @@ class CaptureWriter:
             except Exception:
                 logger.warning(f"Invalid resolution format {self.resolution}, using native camera resolution")
                 res_w = res_h = None
+
+        # Open video source
+        source_arg = self.source
+        self.picamera = None
+        self.cap = None
+        try:
+            if isinstance(source_arg, str) and source_arg.startswith("picamera"):
+                # picamera0, picamera1, or picamera
+                from picamera2 import Picamera2
+
+                picam_idx = 0
+                if len(source_arg) > 8 and source_arg[8:].isdigit():
+                    picam_idx = int(source_arg[8:])
+
+                self.picamera = Picamera2()
+
+                # Configure picamera with requested resolution (if provided)
+                cam_size = (res_w, res_h) if res_w and res_h else (640, 480)
+                self.picamera.configure(
+                    self.picamera.create_video_configuration(
+                        main={"format": "RGB888", "size": cam_size}
+                    )
+                )
+                self.picamera.start()
+
+            else:
+                if isinstance(source_arg, str) and source_arg.isdigit():
+                    source_arg = int(source_arg)
+                self.cap = cv2.VideoCapture(source_arg)
+                if not self.cap.isOpened():
+                    raise RuntimeError(f"Error: Could not open video source {source_arg}")
+
+                if res_w and res_h:
+                    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, res_w)
+                    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, res_h)
+
+        except Exception as e:
+            logger.error(f"Failed to open video source {source_arg}: {e}")
+            return
 
         if self.record and (res_w is None or res_h is None):
             # try to infer from source if resolution not provided
@@ -98,7 +123,7 @@ class CaptureWriter:
 
         async with VideoStreamer(self.streamer_url) as streamer:
             while True:
-                ret, frame = self.cap.read()
+                ret, frame = self._capture_frame()
                 if not ret or frame is None:
                     logger.warning("Could not read frame from source, closing capture loop")
                     break
@@ -177,9 +202,25 @@ class CaptureWriter:
             cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         return frame
 
+    def _capture_frame(self):
+        if self.picamera is not None:
+            frame = self.picamera.capture_array()
+            return (frame is not None, frame)
+
+        if self.cap is not None:
+            ret, frame = self.cap.read()
+            return (ret, frame)
+
+        return (False, None)
+
     def _cleanup(self):
         if self.cap is not None:
             self.cap.release()
+        if self.picamera is not None:
+            try:
+                self.picamera.stop()
+            except Exception as err:
+                logger.warning(f"Failed to stop Picamera: {err}")
         if self.writer is not None:
             self.writer.release()
         cv2.destroyAllWindows()
