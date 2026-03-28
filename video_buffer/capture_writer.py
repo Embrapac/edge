@@ -1,6 +1,8 @@
 
 import asyncio
 import cv2
+import threading
+import queue
 from ultralytics import YOLO
 import time
 from pathlib import Path
@@ -46,6 +48,14 @@ class CaptureWriter:
         self.cap = None
         self.writer = None
         self.resolution = resolution
+        self.frame_count = 0  # For frame skipping in display
+        self.display_skip = 2  # Show every 2nd frame in debug window
+
+        # Display thread setup
+        self.display_queue = queue.Queue(maxsize=5)  # Buffer up to 5 frames
+        self.display_thread = None
+        self.display_running = False
+        self._stream_task = None
 
     async def run(self):
         logger.info(f"CaptureWriter starting with model={self.model_path}, source={self.source}")
@@ -56,6 +66,7 @@ class CaptureWriter:
             return
 
         self.model = YOLO(self.model_path, task="detect")
+        labels = self.model.names
 
         # Parse resolution early for source initialization (needed for Picamera)
         res_w, res_h = None, None
@@ -121,19 +132,28 @@ class CaptureWriter:
             )
             logger.info(f"Recording configured to {self.record_path} ({res_w}x{res_h}@{self.record_fps})")
 
+        # Start display thread if needed
+        if self.show_window:
+            self.display_running = True
+            self.display_thread = threading.Thread(target=self._display_thread, daemon=True)
+            self.display_thread.start()
+            logger.info("Display thread initialized")
+
         async with VideoStreamer(self.streamer_url) as streamer:
             while True:
-                ret, frame = self._capture_frame()
+                # Offload blocking capture + inference to thread pool so the asyncio
+                # event loop is free between frames — this is what keeps capture responsive.
+                ret, frame = await asyncio.to_thread(self._capture_frame)
                 if not ret or frame is None:
                     logger.warning("Could not read frame from source, closing capture loop")
                     break
 
                 if res_w and res_h:
-                    frame = cv2.resize(frame, (res_w, res_h))
+                    frame = await asyncio.to_thread(cv2.resize, frame, (res_w, res_h))
 
-                # Run inference
-                results = self.model(frame, verbose=False)
-                detections = self._process_results(results)
+                # Run inference in thread pool (CPU-bound; blocks event loop if called directly)
+                results = await asyncio.to_thread(lambda: self.model(frame, verbose=False))
+                detections = self._process_results(results, labels)
 
                 # Publish detections to queue
                 await self.detection_queue.put(detections)
@@ -148,31 +168,69 @@ class CaptureWriter:
                 # Stream frame as JPEG bytes
                 success, jpeg = cv2.imencode('.jpg', annotated_frame, [cv2.IMWRITE_JPEG_QUALITY, self.stream_quality])
                 if success:
-                    await streamer.stream_frame(jpeg.tobytes())
+                    # Keep streaming decoupled from inference to avoid backoff delays blocking detection.
+                    if self._stream_task is None or self._stream_task.done():
+                        self._stream_task = asyncio.create_task(streamer.stream_frame(jpeg.tobytes()))
 
                 # Display UI if requested
-                if self.show_window:
-                    cv2.imshow('YOLO Edge Feed', annotated_frame)
-                    key = cv2.waitKey(1) & 0xFF
-                    if key == ord('q'):
-                        logger.info('Quit pressed; exiting capture loop')
-                        break
-                    elif key == ord('s'):
-                        logger.info('Pause pressed; waiting for key')
-                        cv2.waitKey(0)
-                    elif key == ord('p'):
-                        capture_path = 'capture.png'
-                        cv2.imwrite(capture_path, annotated_frame)
-                        logger.info(f'Saved capture to {capture_path}')
+                if self.show_window and self.display_running:
+                    self.frame_count += 1
+                    # Show every Nth frame to reduce display overhead
+                    if self.frame_count % self.display_skip == 0:
+                        try:
+                            # Non-blocking put - drop frame if queue full
+                            self.display_queue.put_nowait(annotated_frame.copy())
+                        except queue.Full:
+                            # Drop oldest frame if queue full
+                            try:
+                                self.display_queue.get_nowait()
+                                self.display_queue.put_nowait(annotated_frame.copy())
+                            except queue.Empty:
+                                pass
 
-                self.buffer_manager.enforce_limit()
+                await asyncio.to_thread(self.buffer_manager.enforce_limit)
 
                 # Rate control
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(0.02)
+
+            if self._stream_task is not None and not self._stream_task.done():
+                self._stream_task.cancel()
+                try:
+                    await self._stream_task
+                except asyncio.CancelledError:
+                    pass
 
         self._cleanup()
 
-    def _process_results(self, results):
+    def _display_thread(self):
+        """Separate thread for OpenCV display to avoid blocking main loop"""
+        logger.info("Display thread started")
+        while self.display_running:
+            try:
+                # Non-blocking get with timeout
+                frame = self.display_queue.get(timeout=0.1)
+                cv2.imshow('YOLO Edge Feed', frame)
+                key = cv2.waitKey(5) & 0xFF
+                if key == ord('q'):
+                    logger.info('Quit pressed in display thread')
+                    self.display_running = False
+                    break
+                elif key == ord('s'):
+                    logger.info('Pause pressed in display thread')
+                    cv2.waitKey(0)
+                elif key == ord('p'):
+                    capture_path = 'capture.png'
+                    cv2.imwrite(capture_path, frame)
+                    logger.info(f'Saved capture to {capture_path}')
+            except queue.Empty:
+                continue
+            except Exception as e:
+                logger.error(f"Display thread error: {e}")
+                break
+        cv2.destroyAllWindows()
+        logger.info("Display thread stopped")
+
+    def _process_results(self, results, labels):
         detections = []
         # results may be list of ultralytics Results objects
         for result in results:
@@ -182,8 +240,10 @@ class CaptureWriter:
                 confidence = float(box.conf)
                 if confidence < self.threshold:
                     continue
+                classidx = int(box.cls.item())
+                classname = labels[classidx]
                 detection = {
-                    'class': int(box.cls.item()) if hasattr(box.cls, 'item') else int(box.cls),
+                    'class': classname,
                     'confidence': confidence,
                     'bbox': [float(x) for x in box.xyxy.tolist()[0]] if hasattr(box.xyxy, 'tolist') else list(box.xyxy),
                     'timestamp': time.time(),
@@ -214,6 +274,15 @@ class CaptureWriter:
         return (False, None)
 
     def _cleanup(self):
+        logger.info("Starting cleanup...")
+
+        # Stop display thread
+        if self.display_running:
+            self.display_running = False
+            if self.display_thread and self.display_thread.is_alive():
+                self.display_thread.join(timeout=1.0)
+                logger.info("Display thread joined")
+
         if self.cap is not None:
             self.cap.release()
         if self.picamera is not None:
@@ -224,3 +293,4 @@ class CaptureWriter:
         if self.writer is not None:
             self.writer.release()
         cv2.destroyAllWindows()
+        logger.info("Cleanup completed")
