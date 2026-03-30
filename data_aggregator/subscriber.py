@@ -2,6 +2,8 @@ import asyncio
 import paho.mqtt.client as mqtt
 import json
 
+from config import Config
+
 MQTT_DEFAULT_PORT = 1883
 
 class PubSubSubscriber:
@@ -33,10 +35,14 @@ class PubSubSubscriber:
         self.client = mqtt.Client()
         self.client.on_message = self.on_message
         self.client.connect(host, port)
-        self.client.subscribe("embrapac/mcu-data")  # Placeholder topic
+        self.client.subscribe(Config.MQTT_TOPIC_DETECTIONS)
         self.loop = asyncio.get_event_loop()
         self.client.loop_start()
 
         # Keep running
         while True:
             await asyncio.sleep(1)
+
+    def publish(self, topic, payload):
+        if self.client:
+            self.client.publish(topic, payload)

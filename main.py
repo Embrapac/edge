@@ -1,4 +1,5 @@
 import asyncio
+import json
 from shared.event_bus import EventBus
 from shared.healthcheck import HealthCheck
 from shared.logger import get_logger, get_struct_logger
@@ -71,6 +72,7 @@ async def main():
                 # Store locally (placeholder)
                 logger.info(f"Storing aggregated data: {aggregated}")
                 # TODO: Implement local storage logic
+                subscriber.publish(Config.MQTT_TOPIC_METRICS, json.dumps(aggregated.computed_metrics))
             except Exception as e:
                 logger.error(f"Error processing output: {e}")
 
