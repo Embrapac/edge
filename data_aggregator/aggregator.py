@@ -1,7 +1,7 @@
 # data_aggregator/aggregator.py
 import asyncio
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from shared.logger import get_struct_logger
 from models.camera_detection import CameraDetection, from_json
@@ -28,14 +28,16 @@ class DataAggregator:
         while True:
             detection = await self._detection_queue.get()
             logger.info(f"Received detection_queue {detection}")
-            camera_detection = from_json(detection[0])  # Assuming detection is a JSON string; adjust if it's already a dict
-            # TODO: adicionar detecção à lista. No calculo do agregado é que pode ser feita a comparação de todas detecções e decidir qual será.
-            self._latest_detections.append(camera_detection)  # substitui pela janela mais recente
-            logger.debug(f"Updated latest detections: {self._latest_detections}")
+            camera_detection = from_json(detection[0] if len(detection) > 0 else None)
+            if camera_detection:
+                self._latest_detections.append(camera_detection)
+                logger.debug(f"Updated latest detections: {self._latest_detections}")
+
 
     async def process_pubsub_event(self, event: dict):
+        logger.debug("Start processing Pub/Sub event received")
         aggregated = AggregatedEvent(
-            timestamp=datetime.now(datetime.timezone.utc),
+            timestamp=datetime.now(timezone.utc),
             pubsub_data=event,
             detections=self._latest_detections.copy(),
         )

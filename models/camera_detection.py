@@ -5,12 +5,13 @@ import string
 
 
 def from_json(json_data: string) -> 'CameraDetection':
-    data = json.loads(json_data)
+    if json_data is None:
+        return None
     return CameraDetection(
-        object_class=data.get("class", "unknown"),
-        confidence=data.get("confidence", 0.0),
-        timestamp=data.get("timestamp", 0.0),
-        bbox=data.get("bbox", [])
+        object_class=json_data.get("class", "unknown"),
+        confidence=json_data.get("confidence", 0.0),
+        timestamp=json_data.get("timestamp", 0.0),
+        bbox=json_data.get("bbox", [])
     )
 
 class CameraDetection:
@@ -27,3 +28,9 @@ class CameraDetection:
             "timestamp": self.timestamp,
             "bbox": self.bbox
         }
+
+    def __repr__(self):
+        return f"CameraDetection(class={self.object_class}, confidence={self.confidence}, timestamp={self.timestamp}, bbox={self.bbox})"
+
+    def __str__(self):
+        return json.dumps(self.to_dict())
