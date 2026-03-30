@@ -6,11 +6,11 @@ class Config:
     DEFAULT_MODEL_PATH = "models/product-sizingv3.pt"
 
     # Inference settings
-    VIDEO_SOURCE = 0  # camera index, or path to video file
-    VIDEO_RESOLUTION = "640x480"  # specify WxH or None to keep native
+    VIDEO_SOURCE = 'picamera1'          # camera index, or path to video file
+    VIDEO_RESOLUTION = "640x480"        # specify WxH or None to keep native
     DETECTION_THRESHOLD = 0.5
-    SHOW_DETECTION_WINDOW = False
+    SHOW_DETECTION_WINDOW = True        # enable/disable debug window with detections
     RECORD_VIDEO = False
     RECORD_PATH = "recorded_output.avi"
     RECORD_FPS = 20
-    FRAME_STREAM_QUALITY = 70  # JPEG quality for frame streaming
+    FRAME_STREAM_QUALITY = 70           # JPEG quality for frame streaming

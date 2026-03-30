@@ -1,0 +1,29 @@
+name: Edge Unit Tests
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install structlog
+
+      - name: Run unit tests
+        working-directory: edge
+        run: python -m unittest discover -s . -p "test_*.py" -v

@@ -56,6 +56,8 @@ edge/
 | **Python 3.10+** | Runtime para aplicação |
 | **MediaMTX** | RTSP streaming (opcional) |
 
+[def]: #servidor-vnc
+
 ### 📚 Bibliotecas Python Principais
 
 **Sistema operacional:**
@@ -79,9 +81,6 @@ pip install ultralytics ncnn opencv-python httpx influxdb-client paho-mqtt
 | **httpx** | Cliente HTTP assíncrono |
 | **paho-mqtt** | Comunicação MQTT |
    
-
-[def]: #servidor-vnc
-
 
 ### Detecção de imagens com YOLO: procedimento manual
 
@@ -133,6 +132,21 @@ TBD
 3) Utilizando script de streming da câmera e OpenCV para exibir o vídeo
 
 `python yolo_detect.py --model=box-sizing_ncnn_model --source=picamera1 --resolution=1280x720`
+
+
+### Formato do dado de detecção
+
+```json
+[
+  {
+    "timestamp": 1774661151.4267824,
+    "class": "Pequena",
+    "confidence": 0.7965003848075867,
+    //"bbox": [x_min, y_min, x_max, y_max]
+    "bbox": [161.16259765625, 219.4057159423828, 270.75555419921875, 303.01177978515625]
+  }
+]
+```
 
 
 # EDGE MONITORING
