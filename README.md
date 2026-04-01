@@ -147,21 +147,3 @@ TBD
   }
 ]
 ```
-
-
-# EDGE MONITORING
-
-Criado estrutura no Docker Compose para rodar o **Mosquitto**, **InfluxDB**, **Telegraf** e **Grafana**, para monitoramento dos KPIs do sistema.
-
-Teste inicial do ambiente realizado no mesmo Raspberry Pi 5: publicação de dados no mosquitto para exibição no _dashboard_ do Grafana:
-
-![Grafana](imgs/grafana-poc.png)
-
-Teste realizado local no RPi:
-
-`mosquitto_pub -h localhost -t "sensor/precision" -m "95"`
-
-Teste realizado a partir de outro dispositivo na mesma rede:
-
-`mosquitto_pub -h 192.168.51.10 -t "sensor/precision" -m "95"`
-
