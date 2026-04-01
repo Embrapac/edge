@@ -43,6 +43,15 @@ class PubSubSubscriber:
         while True:
             await asyncio.sleep(1)
 
+class PubSubPublisher:
+    def __init__(self, host, port=MQTT_DEFAULT_PORT):
+        self.broker_url = f"mqtt://{host}:{port}"
+        self.host = host
+        self.port = port
+        self.client = mqtt.Client()
+        self.loop = asyncio.get_event_loop()
+
     def publish(self, topic, payload):
         if self.client:
+            self.client.connect(self.host, self.port)
             self.client.publish(topic, payload)

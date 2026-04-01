@@ -42,6 +42,7 @@ class DataAggregator:
             detections=self._latest_detections.copy(),
         )
         aggregated.computed_metrics = self._calculate(aggregated)
+        self._latest_detections.clear()
         await self._output_queue.put(aggregated)
 
     def _calculate(self, event: AggregatedEvent) -> dict:
