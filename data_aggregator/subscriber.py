@@ -3,8 +3,11 @@ import paho.mqtt.client as mqtt
 import json
 
 from config import Config
+from shared.logger import get_struct_logger
 
 MQTT_DEFAULT_PORT = 1883
+
+logger = get_struct_logger(__name__)
 
 class PubSubSubscriber:
     def __init__(self, broker_url, aggregator):
@@ -20,7 +23,7 @@ class PubSubSubscriber:
             if self.loop:
                 asyncio.run_coroutine_threadsafe(self.aggregator.process_pubsub_event(payload), self.loop)
         except Exception as e:
-            print(f"Error processing message: {e}")
+            logger.error(f"Error processing message: {e}")
 
     async def listen(self):
         # Parse broker URL (assuming format mqtt://host:port)
@@ -53,5 +56,7 @@ class PubSubPublisher:
 
     def publish(self, topic, payload):
         if self.client:
+            logger.debug(f"Connecting to MQTT broker at {self.host}:{self.port} ...")
             self.client.connect(self.host, self.port)
+            logger.info(f"Publishing to {topic} at {self.host}:{self.port} with payload: {payload}")
             self.client.publish(topic, payload)
