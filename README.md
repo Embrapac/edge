@@ -80,6 +80,15 @@ pip install ultralytics ncnn opencv-python httpx influxdb-client paho-mqtt
 | **opencv-python** | Processamento de imagens |
 | **httpx** | Cliente HTTP assíncrono |
 | **paho-mqtt** | Comunicação MQTT |
+
+### Servidor de recepção compatível com o uploader atual
+
+O uploader do EDGE envia cada frame JPEG como `POST` binário em `/stream/upload`.
+O servidor HTTP compatível foi separado para `stream_receiver_service/` com dependências próprias.
+
+Consulte `stream_receiver_service/README.md` para setup e execução.
+
+A configuração padrão em `config.py` (`STREAMER_URL = "http://localhost:8000/stream"`) permanece compatível.
    
 
 ### Detecção de imagens com YOLO: procedimento manual
