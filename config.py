@@ -14,3 +14,8 @@ class Config:
     RECORD_PATH = "recorded_output.avi"
     RECORD_FPS = 20
     FRAME_STREAM_QUALITY = 70           # JPEG quality for frame streaming
+
+    # MQTT topics
+    MQTT_TOPIC_DETECTIONS = "embrapac/edge/mcu-data"
+    MQTT_TOPIC_METRICS = "embrapac/edge/aggregated-metrics"
+    MQTT_PUBLISHER_HOST = "10.7.202.10"

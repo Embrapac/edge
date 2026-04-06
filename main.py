@@ -1,11 +1,12 @@
 import asyncio
+import json
 from shared.event_bus import EventBus
 from shared.healthcheck import HealthCheck
 from shared.logger import get_logger, get_struct_logger
 from video_buffer.buffer_manager import VideoBufferManager
 from video_buffer.capture_writer import CaptureWriter
 from data_aggregator.aggregator import DataAggregator
-from data_aggregator.subscriber import PubSubSubscriber
+from data_aggregator.subscriber import PubSubSubscriber, PubSubPublisher
 from inference.model_manager import ModelManager
 from inference.model_manager import ModelFetcher
 from config import Config
@@ -36,6 +37,7 @@ async def main():
     # Módulo 2: Agregador
     aggregator = DataAggregator(event_bus.detection_queue, event_bus.output_queue)
     subscriber = PubSubSubscriber(Config.BROKER_URL, aggregator)
+    publisher = PubSubPublisher(Config.MQTT_PUBLISHER_HOST)
 
     # Módulo 3: Inferência
     model_mgr = ModelManager(Config.MODELS_DIR)
@@ -71,6 +73,7 @@ async def main():
                 # Store locally (placeholder)
                 logger.info(f"Storing aggregated data: {aggregated}")
                 # TODO: Implement local storage logic
+                publisher.publish(Config.MQTT_TOPIC_METRICS, json.dumps(aggregated.computed_metrics))
             except Exception as e:
                 logger.error(f"Error processing output: {e}")
 
