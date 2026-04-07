@@ -45,6 +45,21 @@ edge/
 | MCU (Microcontrolador) | EDGE | MQTT | _/embrapac/mcu-data_ |
 | EDGE | Nuvem | MQTT | /embrapac/monitoring |
 
+## Teste rápido UART no GPIO15 (RXD)
+
+Para validar recepção serial no header GPIO do Raspberry Pi 5 (GPIO15 = RXD), use:
+
+```bash
+python examples/uart_rx_test.py --port /dev/serial0 --baud 115200
+```
+
+Se o payload estiver em JSON, o script mostra a linha bruta e o objeto parseado.
+Para ver somente texto cru da serial:
+
+```bash
+python examples/uart_rx_test.py --port /dev/serial0 --baud 115200 --raw-only
+```
+
 
 ## 🔧 Dependências e Setup
 
