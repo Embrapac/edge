@@ -42,6 +42,7 @@ class DataAggregator:
             detections=self._latest_detections.copy(),
         )
         aggregated.computed_metrics = self._calculate(aggregated)
+        self._latest_detections.clear()
         await self._output_queue.put(aggregated)
 
     def _calculate(self, event: AggregatedEvent) -> dict:
@@ -63,8 +64,6 @@ class DataAggregator:
             logger.info(f"Class match: MCU class '{mcu_detection_class}' matches dominant camera class '{camera_detection_metrics.get('dominant_class')}'")
         else:
             logger.warning(f"Class mismatch: MCU class '{mcu_detection_class}' does NOT match dominant camera class '{camera_detection_metrics.get('dominant_class')}'")
-            logger.warning("Discarding this samples due class mismatch")
-            return None
         # Cross-check: MCU timestamp within camera detection window
         raw_timestamps = [d.timestamp for d in event.detections if d.timestamp]
         if mcu_detection_timestamp is not None and raw_timestamps:
