@@ -23,7 +23,9 @@ class UARTSubscriber:
 
         # First try JSON payloads, which are the preferred format.
         try:
+            print(f"Attempting to parse UART line as JSON: {raw_line}")
             payload = json.loads(raw_line)
+            print(f"Parsed UART JSON payload: {payload}")
             if isinstance(payload, dict):
                 return payload
             logger.warning(f"UART payload is not a JSON object: {raw_line}")
