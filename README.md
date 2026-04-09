@@ -40,10 +40,10 @@ edge/
 
 ## Protocolos de Integração
 
-| Origem | Destino | Protocolo | Detalhes |
-|--------|---------|-----------|----------|
-| MCU (Microcontrolador) | EDGE | MQTT | _/embrapac/mcu-data_ |
-| EDGE | Nuvem | MQTT | /embrapac/monitoring |
+| Origem                 | Destino | Protocolo | Detalhes             |
+| ---------------------- | ------- | --------- | -------------------- |
+| MCU (Microcontrolador) | EDGE    | MQTT      | _/embrapac/mcu-data_ |
+| EDGE                   | Nuvem   | MQTT      | /embrapac/monitoring |
 
 ## Teste rápido UART no GPIO15 (RXD)
 
@@ -65,11 +65,11 @@ python examples/uart_rx_test.py --port /dev/serial0 --baud 115200 --raw-only
 
 ### Apps e Serviços
 
-| Serviço | Descrição |
-|---------|-----------|
+| Serviço          | Descrição                                       |
+| ---------------- | ----------------------------------------------- |
 | **Servidor VNC** | Acesso remoto desktop nativo do Raspberry Pi OS |
-| **Python 3.10+** | Runtime para aplicação |
-| **MediaMTX** | RTSP streaming (opcional) |
+| **Python 3.10+** | Runtime para aplicação                          |
+| **MediaMTX**     | RTSP streaming (opcional)                       |
 
 [def]: #servidor-vnc
 
@@ -88,14 +88,74 @@ sudo apt install -y python3-picamera2 libcap-dev
 pip install ultralytics ncnn opencv-python httpx influxdb-client paho-mqtt
 ```
 
-| Biblioteca | Propósito |
-|-----------|----------|
-| **ultralytics** | YOLO para detecção de objetos |
-| **ncnn** | Otimização de modelos para ARM64 |
-| **opencv-python** | Processamento de imagens |
-| **httpx** | Cliente HTTP assíncrono |
-| **paho-mqtt** | Comunicação MQTT |
+| Biblioteca        | Propósito                        |
+| ----------------- | -------------------------------- |
+| **ultralytics**   | YOLO para detecção de objetos    |
+| **ncnn**          | Otimização de modelos para ARM64 |
+| **opencv-python** | Processamento de imagens         |
+| **httpx**         | Cliente HTTP assíncrono          |
+| **paho-mqtt**     | Comunicação MQTT                 |
    
+
+### Configuração de Comunicação Serial no Raspberry Pi 5
+
+| Parâmetro | Valor                   |
+| --------- | ----------------------- |
+| Device    | `/dev/ttyAMA0`          |
+| Baud rate | `115200`                |
+| Formato   | `8N1`                   |
+| TX        | GPIO14 — pino físico 8  |
+| RX        | GPIO15 — pino físico 10 |
+
+O Raspberry Pi 5 exige configuração adicional para habilitar a UART nos pinos GPIO14 (TX, pino 8) e GPIO15 (RX, pino 10). Os passos abaixo são necessários:
+
+#### 1. Habilitar o UART0 via Device Tree Overlay
+
+Edite o arquivo `/boot/firmware/config.txt` e adicione uma seção `[pi5]` com o overlay correto. O parâmetro genérico `dtparam=uart0=on` **não funciona** no Pi 5 e deve ser evitado.
+
+```ini
+[pi5]
+dtoverlay=uart0-pi5
+```
+
+#### 2. Verificar o `cmdline.txt`
+
+Certifique-se de que **não existe** a entrada `console=serial0,115200` no arquivo `/boot/firmware/cmdline.txt`. Se existir, remova-a para que o sistema operacional não ocupe o dispositivo serial como console de debug.
+
+### 3. Reiniciar e verificar o device
+
+Após salvar e reiniciar, confirme que o dispositivo foi criado:
+
+```bash
+ls -l /dev/ttyAMA*
+# Esperado: /dev/ttyAMA0 (GPIO14/15) e /dev/ttyAMA10 (header de debug interno)
+```
+
+#### 4. Permissão de acesso
+
+Adicione seu usuário ao grupo `dialout` para acessar o dispositivo sem `sudo`:
+
+```bash
+sudo usermod -a -G dialout $USER
+```
+
+É necessário fazer logout e login novamente para que a permissão tenha efeito.
+
+#### 5. Teste de loopback (opcional)
+
+Para validar o UART antes de conectar qualquer hardware externo, coloque um jumper entre GPIO14 e GPIO15 e execute:
+
+```bash
+# Terminal 1 — receptor
+python3 uart_reader.py --port /dev/ttyAMA0 --baud 115200
+
+# Terminal 2 — transmissor
+python3 -c "import serial; s=serial.Serial('/dev/ttyAMA0',115200); s.write(b'teste\r\n'); s.close()"
+```
+
+Se a palavra `teste` aparecer no Terminal 1, a UART está funcionando corretamente. Remova o jumper antes de conectar o dispositivo externo.
+
+
 
 ### Detecção de imagens com YOLO: procedimento manual
 
