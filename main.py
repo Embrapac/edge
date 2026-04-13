@@ -8,6 +8,7 @@ from video_buffer.buffer_manager import VideoBufferManager
 from video_buffer.capture_writer import CaptureWriter
 from data_aggregator.aggregator import DataAggregator
 from data_aggregator.subscriber import PubSubSubscriber, PubSubPublisher
+from data_aggregator.uart_subscriber import UARTSubscriber
 from inference.model_manager import ModelManager
 from inference.model_manager import ModelFetcher
 from config import Config
@@ -39,6 +40,12 @@ async def main(show_debug_window):
     aggregator = DataAggregator(event_bus.detection_queue, event_bus.output_queue)
     subscriber = PubSubSubscriber(Config.BROKER_URL, aggregator)
     publisher = PubSubPublisher(Config.MQTT_PUBLISHER_HOST)
+    uart_subscriber = UARTSubscriber(
+        Config.UART_PORT,
+        Config.UART_BAUDRATE,
+        aggregator,
+        timeout=Config.UART_TIMEOUT,
+    )
 
     # Módulo 3: Inferência
     model_mgr = ModelManager(Config.MODELS_DIR)
@@ -97,10 +104,20 @@ async def main(show_debug_window):
         except Exception as e:
             logger.error(f"Subscriber error: {e}")
 
+    async def safe_listen_uart():
+        if not Config.UART_ENABLED:
+            logger.info("UART subscriber is disabled by configuration")
+            return
+        try:
+            await uart_subscriber.listen()
+        except Exception as e:
+            logger.error(f"UART subscriber error: {e}")
+
     await asyncio.gather(
         safe_capture(),
         safe_aggregate(),
         safe_listen(),
+        safe_listen_uart(),
         # TODO: waiting on remote location definition for model updates
         # check_model_updates(),
         process_output(),
