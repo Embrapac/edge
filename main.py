@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 import json
 from shared.event_bus import EventBus
 from shared.healthcheck import HealthCheck
@@ -14,7 +15,7 @@ from config import Config
 
 logger = get_struct_logger(__name__)
 
-async def main():
+async def main(show_debug_window):
     logger.info("Starting main orchestrator")
     event_bus = EventBus()
     health_check = HealthCheck()
@@ -29,7 +30,7 @@ async def main():
         source=Config.VIDEO_SOURCE,
         resolution=Config.VIDEO_RESOLUTION,
         threshold=Config.DETECTION_THRESHOLD,
-        show_window=Config.SHOW_DETECTION_WINDOW,
+        show_window=show_debug_window,
         record=Config.RECORD_VIDEO,
         record_path=Config.RECORD_PATH,
         record_fps=Config.RECORD_FPS,
@@ -124,4 +125,16 @@ async def main():
     )
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="Edge detection orchestrator")
+    parser.add_argument(
+        "--show-detection-window",
+        type=lambda x: x.lower() in ('true', '1', 'yes', 'on'),
+        nargs='?',
+        const=True,
+        default=Config.SHOW_DETECTION_WINDOW,
+        help="Enable the detection window display (accepts: true/false)",
+    )
+    
+    args = parser.parse_args()
+    
+    asyncio.run(main(show_debug_window=args.show_detection_window))

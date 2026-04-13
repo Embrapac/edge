@@ -13,7 +13,7 @@ class Config:
     VIDEO_SOURCE = 'picamera1'          # camera index, or path to video file
     VIDEO_RESOLUTION = "640x480"        # specify WxH or None to keep native
     DETECTION_THRESHOLD = 0.5
-    SHOW_DETECTION_WINDOW = True        # enable/disable debug window with detections
+    SHOW_DETECTION_WINDOW = False        # enable/disable debug window with detections
     RECORD_VIDEO = False
     RECORD_PATH = "recorded_output.avi"
     RECORD_FPS = 20
