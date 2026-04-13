@@ -107,7 +107,11 @@ pip install ultralytics ncnn opencv-python httpx influxdb-client paho-mqtt
 | TX        | GPIO14 — pino físico 8  |
 | RX        | GPIO15 — pino físico 10 |
 
-O Raspberry Pi 5 exige configuração adicional para habilitar a UART nos pinos GPIO14 (TX, pino 8) e GPIO15 (RX, pino 10). Os passos abaixo são necessários:
+O Raspberry Pi 5 exige configuração adicional para habilitar a UART nos pinos GPIO14 (TX, pino 8) e GPIO15 (RX, pino 10).
+
+![Configuração UART Raspberry Pi 5](imgs/rpi5-pinout.png)
+
+Os passos abaixo são necessários:
 
 #### 1. Habilitar o UART0 via Device Tree Overlay
 
@@ -122,7 +126,7 @@ dtoverlay=uart0-pi5
 
 Certifique-se de que **não existe** a entrada `console=serial0,115200` no arquivo `/boot/firmware/cmdline.txt`. Se existir, remova-a para que o sistema operacional não ocupe o dispositivo serial como console de debug.
 
-### 3. Reiniciar e verificar o device
+#### 3. Reiniciar e verificar o device
 
 Após salvar e reiniciar, confirme que o dispositivo foi criado:
 
@@ -221,4 +225,16 @@ TBD
     "bbox": [161.16259765625, 219.4057159423828, 270.75555419921875, 303.01177978515625]
   }
 ]
+```
+
+### Formato do dado de saída para métricas
+
+```json
+{
+  "timestamp": 1774661151.4267824,
+  "p_count": 1,
+  "m_count": 0,
+  "g_count": 0,
+  "average_size": "Média"
+}
 ```

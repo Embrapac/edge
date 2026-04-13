@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from typing import Any
 
 import serial
@@ -23,7 +24,7 @@ class UARTSubscriber:
 
         # First try JSON payloads, which are the preferred format.
         try:
-            print(f"Attempting to parse UART line as JSON: {raw_line}")
+            print(f"Attempting to transform UART line as JSON: {raw_line}")
             payload = json.loads(raw_line)
             print(f"Parsed UART JSON payload: {payload}")
             if isinstance(payload, dict):
@@ -43,6 +44,19 @@ class UARTSubscriber:
             payload[key.strip()] = value.strip()
 
         return payload or None
+    
+    def _convert_UART_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+        logger.debug(f"Converting UART payload: {payload}")
+        # return {
+        #     "source": payload.get("source", "uart"),
+        #     "class": payload.get("class"),
+        #     "timestamp": payload.get("timestamp"),
+        # }
+        return {
+            "source": "uart",
+            "class": "pequena",
+            "timestamp": time.time()
+        }
 
     async def listen(self):
         self.serial_conn = serial.Serial(
@@ -51,24 +65,28 @@ class UARTSubscriber:
             timeout=self.timeout,
         )
         logger.info(f"UART subscriber connected on {self.port} @ {self.baudrate} baud")
-
         while True:
             try:
                 raw = await asyncio.to_thread(self.serial_conn.readline)
                 if not raw:
                     continue
+                logger.debug(f"Raw UART line received: {raw}")
 
                 line = raw.decode("utf-8", errors="ignore").strip()
                 if not line:
                     continue
+                logger.debug(f"Decoded UART line: {line}")
+                
+                # payload = self._parse_line(line)
+                # if not payload:
+                #     logger.warning(f"Ignoring malformed UART line: {line}")
+                #     continue
+                # payload.setdefault("source", "uart")
 
-                payload = self._parse_line(line)
-                if not payload:
-                    logger.warning(f"Ignoring malformed UART line: {line}")
-                    continue
+                event_payload = self._convert_UART_payload(line)
+                logger.info(f"Transformed UART payload: {event_payload}")
 
-                payload.setdefault("source", "uart")
-                await self.aggregator.process_pubsub_event(payload)
+                await self.aggregator.process_pubsub_event(event_payload)
             except Exception as e:
                 logger.error(f"UART subscriber error while reading/parsing: {e}")
                 await asyncio.sleep(0.5)

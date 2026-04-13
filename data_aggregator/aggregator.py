@@ -82,11 +82,8 @@ class DataAggregator:
             "mcu_ts_in_range": ts_in_range,
         }
 
-
-
     def _compute_camera_detection_metrics(self, detections: list) -> dict:
         count = len(detections)
-
         # Most identified class
         class_counts: dict[str, int] = {}
         for d in detections:
@@ -98,7 +95,6 @@ class DataAggregator:
             sum(d.confidence for d in detections) / count
             if count else 0.0
         )
-
         # Begin and end timestamps
         timestamps = [d.timestamp for d in detections if d.timestamp]
         begin_ts = datetime.fromtimestamp(min(timestamps)).strftime(TS_FMT) if timestamps else None
