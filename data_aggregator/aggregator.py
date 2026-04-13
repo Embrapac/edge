@@ -70,7 +70,7 @@ class DataAggregator:
             mcu_ts = float(mcu_detection_timestamp)
             ts_in_range = min(raw_timestamps) <= mcu_ts <= max(raw_timestamps)
         else:
-            ts_in_range = None
+            ts_in_range = False
 
         mcu_detection_time = datetime.fromtimestamp(float(mcu_detection_timestamp)).strftime(TS_FMT) if mcu_detection_timestamp else None
         logger.info(f"Cross-check: object_class={mcu_detection_class}, mcu_detection_time={mcu_detection_time}")
