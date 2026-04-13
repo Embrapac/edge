@@ -54,7 +54,7 @@ class UARTSubscriber:
         # }
         return {
             "source": "uart",
-            "class": "pequena",
+            "class": "Pequena",
             "timestamp": time.time()
         }
 
