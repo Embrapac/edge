@@ -6,7 +6,7 @@ logger = get_struct_logger(__name__)
 
 class VideoStreamer:
     def __init__(self, server_url: str):
-        self.server_url = server_url
+        self.server_url = server_url.rstrip("/")
         self.session = None
         self._consecutive_failures = 0
 
@@ -24,9 +24,14 @@ class VideoStreamer:
         After 3 consecutive failures, delays will be applied before each retry.
         """
         try:
-            # Placeholder: Send frame as POST request
+            # Accept either a base URL (e.g. http://host/stream) or a full
+            # endpoint URL (e.g. http://host/stream/upload).
+            upload_url = self.server_url
+            if not upload_url.endswith("/upload"):
+                upload_url = f"{upload_url}/upload"
+
             response = await self.session.post(
-                f"{self.server_url}/upload",
+                upload_url,
                 content=frame_bytes,
                 headers={"Content-Type": "application/octet-stream"}
             )

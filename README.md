@@ -88,13 +88,25 @@ sudo apt install -y python3-picamera2 libcap-dev
 pip install ultralytics ncnn opencv-python httpx influxdb-client paho-mqtt
 ```
 
-| Biblioteca        | Propósito                        |
-| ----------------- | -------------------------------- |
-| **ultralytics**   | YOLO para detecção de objetos    |
-| **ncnn**          | Otimização de modelos para ARM64 |
-| **opencv-python** | Processamento de imagens         |
-| **httpx**         | Cliente HTTP assíncrono          |
-| **paho-mqtt**     | Comunicação MQTT                 |
+| Biblioteca | Propósito |
+|-----------|----------|
+| **ultralytics** | YOLO para detecção de objetos |
+| **ncnn** | Otimização de modelos para ARM64 |
+| **opencv-python** | Processamento de imagens |
+| **httpx** | Cliente HTTP assíncrono |
+| **paho-mqtt** | Comunicação MQTT |
+
+## Streaming de vídeo
+
+O módulo EDGE pode enviar frames capturados da câmera para um serviço HTTP dedicado. Esse fluxo permite separar a captura e inferência local da visualização remota do vídeo mais recente ou de um stream contínuo em MJPEG.
+
+### Fluxo de funcionamento
+
+1. O EDGE captura os frames e gera imagens JPEG.
+2. O uploader envia cada frame por `POST` binário para `/stream/upload`.
+3. O serviço receptor mantém o último frame recebido e expõe endpoints para inspeção e visualização contínua.
+
+Para maiores detalhes verifique [stream_receiver_service/README.md](stream_receiver_service/README.md).
    
 
 ### Configuração de Comunicação Serial no Raspberry Pi 5
