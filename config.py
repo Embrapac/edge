@@ -4,7 +4,7 @@ class Config:
     BROKER_URL = "mqtt://localhost:1883"
     UART_ENABLED = True
     UART_PORT = "/dev/ttyAMA0"
-    UART_BAUDRATE = 115200
+    UART_BAUDRATE = 9600
     UART_TIMEOUT = 1.0
     MODELS_DIR = "models"
     DEFAULT_MODEL_PATH = "models/product-sizingv3.pt"
