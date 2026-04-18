@@ -5,7 +5,6 @@ from typing import Any
 
 import serial
 
-from examples.uart_csv_read import BAUD
 from shared.logger import get_struct_logger
 
 logger = get_struct_logger(__name__)
@@ -23,7 +22,7 @@ def calc_char_time_s(baud, bytesize, parity, stopbits):
 BYTESIZE = serial.EIGHTBITS
 PARITY = serial.PARITY_NONE
 STOPBITS = serial.STOPBITS_ONE
-CHAR_TIME_S = calc_char_time_s(BAUD, 8, PARITY, STOPBITS)
+CHAR_TIME_S = calc_char_time_s(9600, 8, PARITY, STOPBITS)
 FRAME_GAP_S = 5.0 * CHAR_TIME_S
 
 class UARTSubscriber:
