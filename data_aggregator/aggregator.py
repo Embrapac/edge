@@ -35,7 +35,7 @@ class DataAggregator:
 
 
     async def process_pubsub_event(self, event: dict):
-        logger.debug("Start processing Pub/Sub event received")
+        logger.debug("Start processing event data received")
         aggregated = AggregatedEvent(
             timestamp=datetime.now(timezone.utc),
             pubsub_data=event,

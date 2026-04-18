@@ -21,6 +21,7 @@ class PubSubSubscriber:
             payload = json.loads(message.payload.decode())
             # Schedule async method in the event loop from another thread
             if self.loop:
+                logger.debug("Pub/Sub event received")
                 asyncio.run_coroutine_threadsafe(self.aggregator.process_pubsub_event(payload), self.loop)
         except Exception as e:
             logger.error(f"Error processing message: {e}")

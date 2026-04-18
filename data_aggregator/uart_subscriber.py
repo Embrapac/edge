@@ -60,11 +60,36 @@ class UARTSubscriber:
 
         return payload or None
     
-    def _convert_UART_payload(self, payload: dict[str, Any], timestamp: float) -> dict[str, Any]:
+    def _convert_UART_payload(self, payload: str, timestamp: float) -> dict[str, Any]:
         logger.debug(f"Converting UART payload: {payload}")
+        detected_class = None
+        state = 'NORMAL'
+        status = 'ON'
+        if payload == '1000000':
+            logger.warn('Received UART payload: no detections')
+            return None
+        elif payload == '100000001':
+            logger.info('Received UART payload: detected P')
+            detected_class = 'Pequena'
+        elif payload == '100000010':
+            logger.info('Received UART payload: detected M')
+            detected_class = 'Media'
+        elif payload == '100000011':
+            logger.info('Received UART payload: detected G')
+            detected_class = 'Grande'
+        elif payload == '0100000' or payload == '01010000':
+            logger.info('Received UART payload: emergency state')
+            state = 'EMERGENCY'
+        elif payload == '0010000':
+            logger.info('Received UART payload: system offline')
+            status = 'OFF'
+        else:
+            logger.warning(f"Received UART payload with unknown format: {payload}")
         return {
             "source": "uart",
-            "class": "Pequena",
+            "class": detected_class,
+            "system": state,
+            "status": status,
             "timestamp": timestamp
         }
 
@@ -87,27 +112,30 @@ class UARTSubscriber:
         while True:
             try:
                 # raw = await asyncio.to_thread(self.serial_conn.readline)
-                chunk = serial.read(serial.in_waiting or 1)
+                chunk = await asyncio.to_thread(self.serial_conn.read, self.serial_conn.in_waiting or 1)
                 # if not raw:
                 #     continue
-                logger.debug(f"Raw UART line received: {raw}")
+                logger.debug(f"Raw UART line received: {chunk}")
+                if not chunk:
+                    continue
                 now = time.monotonic()
                 # Estado da captura RX
-                if chunk:
-                    rx_frame.extend(chunk)
-                    last_rx_time = now
-                elif rx_frame and last_rx_time is not None and (now - last_rx_time) >= FRAME_GAP_S:
-                    seq += 1
-                    raw = bytes(rx_frame)
-                    # ts_humano = log_frame(writer, seq, "RX", raw)
-                    line = bytes_to_bin_msb(raw)
-                    rx_frame.clear()
-                    last_rx_time = None
+                # # if chunk:
+                # #     rx_frame.extend(chunk)
+                # #     last_rx_time = now
+                # # elif rx_frame and last_rx_time is not None and (now - last_rx_time) >= FRAME_GAP_S:
+                # #     seq += 1
+                # #     raw = bytes(rx_frame)
+                # #     # ts_humano = log_frame(writer, seq, "RX", raw)
+                # #     line = bytes_to_bin_msb(raw)
+                # #     rx_frame.clear()
+                # #     last_rx_time = None
+                line = chunk.decode("utf-8", errors="ignore").strip()
+                logger.debug(f"Decoded UART line: {line}")
 
                 # line = raw.decode("utf-8", errors="ignore").strip()
                 if not line:
                     continue
-                logger.debug(f"Decoded UART line: {line}")
                 
                 # payload = self._parse_line(line)
                 # if not payload:
@@ -122,3 +150,31 @@ class UARTSubscriber:
             except Exception as e:
                 logger.error(f"UART subscriber error while reading/parsing: {e}")
                 await asyncio.sleep(0.5)
+
+class UARTPublisher:
+    def __init__(self, port: str, baudrate: int, timeout: float = 1.0):
+        self.port = port
+        self.baudrate = baudrate
+        self.timeout = timeout
+        self.serial_conn = None
+
+    def publish(self, payload: str):
+        try:
+            if not self.serial_conn:
+                self.serial_conn = serial.Serial(
+                    port=self.port,
+                    baudrate=self.baudrate,
+                    bytesize=BYTESIZE,
+                    parity=PARITY,
+                    stopbits=STOPBITS,
+                    inter_byte_timeout=0.01,
+                    xonxoff=False,
+                    rtscts=False,
+                    dsrdtr=False,
+                    timeout=self.timeout,
+                )
+                logger.info(f"UART publisher connected on {self.port} @ {self.baudrate} baud")
+            self.serial_conn.write(payload.encode("utf-8"))
+            logger.debug(f"Published to UART: {payload}")
+        except Exception as e:
+            logger.error(f"Error publishing to UART: {e}")
