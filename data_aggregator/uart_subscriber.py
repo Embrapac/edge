@@ -65,22 +65,22 @@ class UARTSubscriber:
         detected_class = None
         state = 'NORMAL'
         status = 'ON'
-        if payload == '1000000':
+        if payload == '10000000':
             logger.warn('Received UART payload: no detections')
             return None
-        elif payload == '100000001':
+        elif payload == '10000001':
             logger.info('Received UART payload: detected P')
             detected_class = 'Pequena'
-        elif payload == '100000010':
+        elif payload == '10000010':
             logger.info('Received UART payload: detected M')
             detected_class = 'Media'
-        elif payload == '100000011':
+        elif payload == '10000011':
             logger.info('Received UART payload: detected G')
             detected_class = 'Grande'
-        elif payload == '0100000' or payload == '01010000':
+        elif payload == '01000000' or payload == '01010000':
             logger.info('Received UART payload: emergency state')
             state = 'EMERGENCY'
-        elif payload == '0010000':
+        elif payload == '00100000':
             logger.info('Received UART payload: system offline')
             status = 'OFF'
         else:
@@ -97,7 +97,7 @@ class UARTSubscriber:
     async def listen(self):
         self.serial_conn = serial.Serial(
             port=self.port,
-            baudrate=self.baudrate,
+            baudrate=self.baudrate, 
             bytesize=BYTESIZE,
             parity=PARITY,
             stopbits=STOPBITS,
@@ -105,37 +105,33 @@ class UARTSubscriber:
             xonxoff=False,
             rtscts=False,
             dsrdtr=False,
-            timeout=self.timeout,
+            timeout=min(self.timeout, 0.05),
         )
         logger.info(f"UART subscriber connected on {self.port} @ {self.baudrate} baud")
         rx_frame = bytearray()
         last_rx_time = None
         while True:
             try:
-                # raw = await asyncio.to_thread(self.serial_conn.readline)
-                chunk = await asyncio.to_thread(self.serial_conn.read, self.serial_conn.in_waiting or 1)
-                # if not raw:
-                #     continue
-                logger.debug(f"Raw UART line received: {chunk}")
-                if not chunk:
-                    continue
                 now = time.monotonic()
-                # Estado da captura RX
-                # # if chunk:
-                # #     rx_frame.extend(chunk)
-                # #     last_rx_time = now
-                # # elif rx_frame and last_rx_time is not None and (now - last_rx_time) >= FRAME_GAP_S:
-                # #     seq += 1
-                # #     raw = bytes(rx_frame)
-                # #     # ts_humano = log_frame(writer, seq, "RX", raw)
-                # #     line = bytes_to_bin_msb(raw)
-                # #     rx_frame.clear()
-                # #     last_rx_time = None
-                line = chunk.decode("utf-8", errors="ignore").strip()
-                logger.debug(f"Decoded UART line: {line}")
+                chunk = await asyncio.to_thread(self.serial_conn.read, self.serial_conn.in_waiting or 1)
+                if chunk:
+                    logger.debug(f"Raw UART chunk received: {chunk}")
+                    rx_frame.extend(chunk)
+                    last_rx_time = now
+                    continue
+                # Fecha um frame quando houve silencio suficiente entre bytes recebidos.
+                if not rx_frame or last_rx_time is None or (now - last_rx_time) < FRAME_GAP_S:
+                    continue
 
-                # line = raw.decode("utf-8", errors="ignore").strip()
+                raw_frame = bytes(rx_frame)
+                logger.debug(f"Raw UART frame received: {raw_frame}")
+                line = raw_frame.decode("utf-8", errors="ignore").strip()
+                logger.debug(f"Decoded UART frame: {line}")
+                rx_frame.clear()
+                last_rx_time = None
+
                 if not line:
+                    logger.warning("Ignoring empty UART frame after decoding.")
                     continue
                 
                 # payload = self._parse_line(line)
