@@ -85,6 +85,7 @@ class UARTSubscriber:
             status = 'OFF'
         else:
             logger.warning(f"Received UART payload with unknown format: {payload}")
+            return None
         return {
             "source": "uart",
             "class": detected_class,
@@ -145,8 +146,10 @@ class UARTSubscriber:
 
                 event_payload = self._convert_UART_payload(line, now)
                 logger.info(f"Transformed UART payload: {event_payload}")
-
-                await self.aggregator.process_pubsub_event(event_payload)
+                if event_payload:
+                    await self.aggregator.process_pubsub_event(event_payload)
+                else:
+                    logger.warning(f"UART line could not be converted to event payload: {line}, skipping.")
             except Exception as e:
                 logger.error(f"UART subscriber error while reading/parsing: {e}")
                 await asyncio.sleep(0.5)
