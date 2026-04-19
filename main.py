@@ -39,7 +39,7 @@ async def main(show_debug_window):
     # Módulo 2: Agregador
     aggregator = DataAggregator(event_bus.detection_queue, event_bus.output_queue)
     subscriber = PubSubSubscriber(Config.BROKER_URL, aggregator)
-    publisher = PubSubPublisher(Config.MQTT_PUBLISHER_HOST)
+    publisher = PubSubPublisher(Config.MQTT_PUBLISHER_HOST, Config.MQTT_PUBLISHER_PORT)
     uart_subscriber = UARTSubscriber(
         Config.UART_PORT,
         Config.UART_BAUDRATE,

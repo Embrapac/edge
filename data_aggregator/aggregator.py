@@ -35,7 +35,7 @@ class DataAggregator:
 
 
     async def process_pubsub_event(self, event: dict):
-        logger.debug("Start processing Pub/Sub event received")
+        logger.debug("Start processing event data received")
         aggregated = AggregatedEvent(
             timestamp=datetime.now(timezone.utc),
             pubsub_data=event,
@@ -70,7 +70,7 @@ class DataAggregator:
             mcu_ts = float(mcu_detection_timestamp)
             ts_in_range = min(raw_timestamps) <= mcu_ts <= max(raw_timestamps)
         else:
-            ts_in_range = None
+            ts_in_range = False
 
         mcu_detection_time = datetime.fromtimestamp(float(mcu_detection_timestamp)).strftime(TS_FMT) if mcu_detection_timestamp else None
         logger.info(f"Cross-check: object_class={mcu_detection_class}, mcu_detection_time={mcu_detection_time}")
@@ -82,11 +82,8 @@ class DataAggregator:
             "mcu_ts_in_range": ts_in_range,
         }
 
-
-
     def _compute_camera_detection_metrics(self, detections: list) -> dict:
         count = len(detections)
-
         # Most identified class
         class_counts: dict[str, int] = {}
         for d in detections:
@@ -98,7 +95,6 @@ class DataAggregator:
             sum(d.confidence for d in detections) / count
             if count else 0.0
         )
-
         # Begin and end timestamps
         timestamps = [d.timestamp for d in detections if d.timestamp]
         begin_ts = datetime.fromtimestamp(min(timestamps)).strftime(TS_FMT) if timestamps else None
