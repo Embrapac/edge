@@ -2,7 +2,8 @@ import asyncio
 import httpx
 from shared.logger import get_logger, get_struct_logger
 
-logger = get_struct_logger(__name__)
+struct_logger = get_struct_logger(__name__)
+default_logger = get_logger(__name__)
 
 class VideoStreamer:
     def __init__(self, server_url: str):
@@ -37,13 +38,13 @@ class VideoStreamer:
             )
             response.raise_for_status()
             self._consecutive_failures = 0
-            logger.debug("Frame streamed successfully")
+            default_logger.debug("Frame streamed successfully")
         except Exception as e:
             self._consecutive_failures += 1
             if self._consecutive_failures > 3:
                 # Exponential backoff: 2^(n-3) seconds, capped at 30s
                 backoff_seconds = min(2 ** (self._consecutive_failures - 3), 30)
-                logger.warning(
+                struct_logger.warning(
                     "Stream frame failed %d times, backing off for %ds: %s",
                     self._consecutive_failures,
                     backoff_seconds,
@@ -51,7 +52,7 @@ class VideoStreamer:
                 )
                 await asyncio.sleep(backoff_seconds)
             else:
-                logger.error(
+                struct_logger.error(
                     "Failed to stream frame (attempt %d): %s",
                     self._consecutive_failures,
                     e,

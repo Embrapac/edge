@@ -9,6 +9,7 @@ from models.camera_detection import CameraDetection, from_json
 logger = get_struct_logger(__name__)
 
 TS_FMT = "%Y-%m-%d %H:%M:%S.%f"
+TIMESTAMP_TOLERANCE_SEC = 3.0
 
 @dataclass
 class AggregatedEvent:
@@ -68,7 +69,9 @@ class DataAggregator:
         raw_timestamps = [d.timestamp for d in event.detections if d.timestamp]
         if mcu_detection_timestamp is not None and raw_timestamps:
             mcu_ts = float(mcu_detection_timestamp)
-            ts_in_range = min(raw_timestamps) <= mcu_ts <= max(raw_timestamps)
+            min_ts = min(raw_timestamps) - TIMESTAMP_TOLERANCE_SEC
+            max_ts = max(raw_timestamps) + TIMESTAMP_TOLERANCE_SEC
+            ts_in_range = min_ts <= mcu_ts <= max_ts
         else:
             ts_in_range = False
 

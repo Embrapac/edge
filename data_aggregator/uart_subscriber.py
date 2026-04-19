@@ -112,7 +112,7 @@ class UARTSubscriber:
         last_rx_time = None
         while True:
             try:
-                now = time.monotonic()
+                now = time.time()
                 chunk = await asyncio.to_thread(self.serial_conn.read, self.serial_conn.in_waiting or 1)
                 if chunk:
                     logger.debug(f"Raw UART chunk received: {chunk}")

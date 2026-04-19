@@ -1,7 +1,7 @@
 class Config:
     VIDEO_STORAGE_PATH = "/tmp"
     STREAMER_URL = "http://10.7.202.108:8000/stream"
-    BROKER_URL = "mqtt://localhost:1883"
+    BROKER_URL = "mqtt://10.7.202.10:11883"
     UART_ENABLED = True
     UART_PORT = "/dev/ttyAMA0"
     UART_BAUDRATE = 9600
