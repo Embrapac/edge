@@ -3,13 +3,13 @@ import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
+from config import Config
 from shared.logger import get_struct_logger
 from models.camera_detection import CameraDetection, from_json
 
 logger = get_struct_logger(__name__)
 
 TS_FMT = "%Y-%m-%d %H:%M:%S.%f"
-TIMESTAMP_TOLERANCE_SEC = 3.0
 
 @dataclass
 class AggregatedEvent:
@@ -19,10 +19,16 @@ class AggregatedEvent:
     computed_metrics: dict = field(default_factory=dict)
 
 class DataAggregator:
-    def __init__(self, detection_queue: asyncio.Queue, output_queue: asyncio.Queue):
+    def __init__(
+        self,
+        detection_queue: asyncio.Queue,
+        output_queue: asyncio.Queue,
+        timestamp_tolerance_sec: float = Config.DEFAULT_TIMESTAMP_TOLERANCE_SEC,
+    ):
         self._detection_queue = detection_queue
         self._output_queue = output_queue
         self._latest_detections = []
+        self._timestamp_tolerance_sec = timestamp_tolerance_sec
 
     async def consume_detections(self):
         """Mantém a lista de detecções recentes atualizada."""
@@ -69,8 +75,8 @@ class DataAggregator:
         raw_timestamps = [d.timestamp for d in event.detections if d.timestamp]
         if mcu_detection_timestamp is not None and raw_timestamps:
             mcu_ts = float(mcu_detection_timestamp)
-            min_ts = min(raw_timestamps) - TIMESTAMP_TOLERANCE_SEC
-            max_ts = max(raw_timestamps) + TIMESTAMP_TOLERANCE_SEC
+            min_ts = min(raw_timestamps) - self._timestamp_tolerance_sec
+            max_ts = max(raw_timestamps) + self._timestamp_tolerance_sec
             ts_in_range = min_ts <= mcu_ts <= max_ts
         else:
             ts_in_range = False

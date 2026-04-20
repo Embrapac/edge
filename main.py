@@ -15,17 +15,25 @@ from config import Config
 
 logger = get_struct_logger(__name__)
 
-async def main(show_debug_window):
+async def main(
+    show_debug_window,
+    general_server_ip,
+    stream_server_ip,
+    mqtt_broker_port,
+    timestamp_tolerance_sec,
+):
     logger.info("Starting main orchestrator")
     event_bus = EventBus()
     health_check = HealthCheck()
+    streamer_url = Config.build_streamer_url(stream_server_ip)
+    broker_url = Config.build_broker_url(general_server_ip, mqtt_broker_port)
     
-    # Módulo 1: Buffer de vídeo
+    # Module 1: Video Buffer
     buffer_mgr = VideoBufferManager(Config.VIDEO_STORAGE_PATH)
     capture_writer = CaptureWriter(
         buffer_mgr,
         event_bus.detection_queue,
-        streamer_url=Config.STREAMER_URL,
+        streamer_url=streamer_url,
         model_path=Config.DEFAULT_MODEL_PATH,
         source=Config.VIDEO_SOURCE,
         resolution=Config.VIDEO_RESOLUTION,
@@ -35,22 +43,22 @@ async def main(show_debug_window):
         record_path=Config.RECORD_PATH,
         record_fps=Config.RECORD_FPS,
     )
-
-    # Módulo 2: Agregador
-    aggregator = DataAggregator(event_bus.detection_queue, event_bus.output_queue)
-    subscriber = PubSubSubscriber(Config.BROKER_URL, aggregator)
-    publisher = PubSubPublisher(Config.MQTT_PUBLISHER_HOST, Config.MQTT_PUBLISHER_PORT)
+    # Module 2: Aggregator
+    aggregator = DataAggregator(
+        event_bus.detection_queue,
+        event_bus.output_queue,
+        timestamp_tolerance_sec=timestamp_tolerance_sec,
+    )
+    subscriber = PubSubSubscriber(broker_url, aggregator)
+    publisher = PubSubPublisher(general_server_ip, mqtt_broker_port)
     uart_subscriber = UARTSubscriber(
         Config.UART_PORT,
         Config.UART_BAUDRATE,
         aggregator,
         timeout=Config.UART_TIMEOUT,
     )
-
-    # Módulo 3: Inferência
+    # Module 3: Inference
     model_mgr = ModelManager(Config.MODELS_DIR)
-    # model_fetcher = ModelFetcher(model_mgr, Config.MODELS_DIR)
-
     model_mgr.load_model(Config.DEFAULT_MODEL_PATH)
 
     # Task for health checks
@@ -131,14 +139,44 @@ async def main(show_debug_window):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Edge detection orchestrator")
     parser.add_argument(
+        "--general-server-ip",
+        default=Config.DEFAULT_GENERAL_SERVER_IP,
+        help="backend server IP",
+    )
+    parser.add_argument(
+        "--stream-server-ip",
+        default=Config.DEFAULT_STREAM_SERVER_IP,
+        help="stream server IP",
+    )
+    parser.add_argument(
+        "--mqtt-broker-port",
+        type=int,
+        default=Config.DEFAULT_MQTT_BROKER_PORT,
+        help="MQTT broker port",
+    )
+    parser.add_argument(
+        "--timestamp-tolerance-sec",
+        type=float,
+        default=Config.DEFAULT_TIMESTAMP_TOLERANCE_SEC,
+        help="Timestamp tolerance in seconds for aggregator correlation",
+    )
+    parser.add_argument(
         "--show-detection-window",
         type=lambda x: x.lower() in ('true', '1', 'yes', 'on'),
         nargs='?',
         const=True,
         default=Config.SHOW_DETECTION_WINDOW,
-        help="Enable the detection window display (accepts: true/false)",
+        help="Enable the debug window display (accepts: true/false)",
     )
     
     args = parser.parse_args()
     
-    asyncio.run(main(show_debug_window=args.show_detection_window))
+    asyncio.run(
+        main(
+            show_debug_window=args.show_detection_window,
+            general_server_ip=args.general_server_ip,
+            stream_server_ip=args.stream_server_ip,
+            mqtt_broker_port=args.mqtt_broker_port,
+            timestamp_tolerance_sec=args.timestamp_tolerance_sec,
+        )
+    )

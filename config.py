@@ -1,7 +1,13 @@
 class Config:
     VIDEO_STORAGE_PATH = "/tmp"
-    STREAMER_URL = "http://10.7.202.108:8000/stream"
-    BROKER_URL = "mqtt://10.7.202.10:11883"
+    DEFAULT_GENERAL_SERVER_IP = "10.7.202.10"
+    DEFAULT_STREAM_SERVER_IP = "10.7.202.108"
+    DEFAULT_MQTT_BROKER_PORT = 11883
+    DEFAULT_TIMESTAMP_TOLERANCE_SEC = 3.0
+    STREAM_SERVER_PORT = 8000
+    STREAM_SERVER_PATH = "/stream"
+    STREAMER_URL = f"http://{DEFAULT_STREAM_SERVER_IP}:{STREAM_SERVER_PORT}{STREAM_SERVER_PATH}"
+    BROKER_URL = f"mqtt://{DEFAULT_GENERAL_SERVER_IP}:{DEFAULT_MQTT_BROKER_PORT}"
     UART_ENABLED = True
     UART_PORT = "/dev/ttyAMA0"
     UART_BAUDRATE = 9600
@@ -24,5 +30,13 @@ class Config:
     MQTT_TOPIC_METRICS = "embrapac/edge/aggregated-metrics"
     MQTT_TOPIC_DATA_DETECTIONS = "embrapac/edge/count"
     MQTT_TOPIC_CBELT_STATUS = "embrapac/edge/cbelt"
-    MQTT_PUBLISHER_HOST = "10.7.202.10"
-    MQTT_PUBLISHER_PORT = 11883
+    MQTT_PUBLISHER_HOST = DEFAULT_GENERAL_SERVER_IP
+    MQTT_PUBLISHER_PORT = DEFAULT_MQTT_BROKER_PORT
+
+    @classmethod
+    def build_streamer_url(cls, host: str) -> str:
+        return f"http://{host}:{cls.STREAM_SERVER_PORT}{cls.STREAM_SERVER_PATH}"
+
+    @staticmethod
+    def build_broker_url(host: str, port: int) -> str:
+        return f"mqtt://{host}:{port}"
