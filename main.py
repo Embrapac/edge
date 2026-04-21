@@ -96,10 +96,12 @@ async def main(
                 logger.info(f"Storing aggregated data: {aggregated}")
                 # TODO: Implement local storage logic
                 publisher.publish(Config.MQTT_TOPIC_METRICS, json.dumps(aggregated.computed_metrics))
-                publisher.publish(Config.MQTT_TOPIC_DATA_DETECTIONS, json.dumps({
-                    "detected_class": aggregated.computed_metrics.get("mcu_class"),
-                    "mcu_timestamp": aggregated.computed_metrics.get("mcu_timestamp"),
-                }))
+                # Only publish detection counts if MCU class was identified
+                if aggregated.computed_metrics.get("mcu_class"):
+                    publisher.publish(Config.MQTT_TOPIC_DATA_DETECTIONS, json.dumps({
+                        "detected_class": aggregated.computed_metrics.get("mcu_class"),
+                        "mcu_timestamp": aggregated.computed_metrics.get("mcu_timestamp"),
+                    }))
             except Exception as e:
                 logger.error(f"Error processing output: {e}")
 

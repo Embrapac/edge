@@ -83,8 +83,8 @@ class UARTSubscriber:
             logger.info('Received UART payload: emergency state')
             state = 'EMERGENCY'
         elif payload == '00100000':
-            logger.info('Received UART payload: system offline')
-            status = 'OFF'
+            logger.info('Received UART payload: system online/offline')
+            status = 'ON/OFF'
         else:
             logger.warning(f"Received UART payload with unknown format: {payload}")
             return None
