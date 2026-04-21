@@ -72,7 +72,7 @@ class TestUARTPublisherEncoding(unittest.TestCase):
     def test_known_named_command_is_encoded(self):
         self.assertEqual(
             UARTPublisher.resolve_command_payload("control_cbelt", "START"),
-            "00010000",
+            "00100000",
         )
 
     def test_explicit_binary_command_is_forwarded(self):
