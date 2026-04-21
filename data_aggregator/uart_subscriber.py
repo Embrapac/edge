@@ -1,10 +1,12 @@
 import asyncio
 import json
+import re
 import time
 from typing import Any
 
 import serial
 
+from config import Config
 from shared.logger import get_struct_logger
 
 logger = get_struct_logger(__name__)
@@ -175,5 +177,28 @@ class UARTPublisher:
                 logger.info(f"UART publisher connected on {self.port} @ {self.baudrate} baud")
             self.serial_conn.write(payload.encode("utf-8"))
             logger.debug(f"Published to UART: {payload}")
+            return True
         except Exception as e:
             logger.error(f"Error publishing to UART: {e}")
+            return False
+
+    @staticmethod
+    def resolve_command_payload(operation: str, command: str) -> str | None:
+        normalized_operation = str(operation or "").strip().lower()
+        normalized_command = str(command or "").strip().upper()
+
+        if re.fullmatch(r"[01]{8}", normalized_command):
+            return normalized_command
+
+        return Config.UART_COMMAND_ENCODINGS.get((normalized_operation, normalized_command))
+
+    def publish_command(self, operation: str, command: str) -> bool:
+        payload = self.resolve_command_payload(operation, command)
+        if payload is None:
+            logger.warning(
+                "Unsupported UART command mapping for "
+                f"operation='{operation}' and command='{command}'"
+            )
+            return False
+
+        return self.publish(payload)

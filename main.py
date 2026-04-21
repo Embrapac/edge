@@ -8,7 +8,7 @@ from video_buffer.buffer_manager import VideoBufferManager
 from video_buffer.capture_writer import CaptureWriter
 from data_aggregator.aggregator import DataAggregator
 from data_aggregator.subscriber import PubSubSubscriber, PubSubPublisher
-from data_aggregator.uart_subscriber import UARTSubscriber
+from data_aggregator.uart_subscriber import UARTPublisher, UARTSubscriber
 from inference.model_manager import ModelManager
 from inference.model_manager import ModelFetcher
 from config import Config
@@ -47,10 +47,16 @@ async def main(
     aggregator = DataAggregator(
         event_bus.detection_queue,
         event_bus.output_queue,
+        input_queue=event_bus.input_queue,
         timestamp_tolerance_sec=timestamp_tolerance_sec,
     )
     subscriber = PubSubSubscriber(broker_url, aggregator)
     publisher = PubSubPublisher(general_server_ip, mqtt_broker_port)
+    uart_publisher = UARTPublisher(
+        Config.UART_PORT,
+        Config.UART_BAUDRATE,
+        timeout=Config.UART_TIMEOUT,
+    )
     uart_subscriber = UARTSubscriber(
         Config.UART_PORT,
         Config.UART_BAUDRATE,
@@ -110,6 +116,12 @@ async def main(
         except Exception as e:
             logger.error(f"Aggregator error: {e}")
 
+    async def safe_consume_input():
+        try:
+            await aggregator.consume_input_events(uart_publisher)
+        except Exception as e:
+            logger.error(f"Input queue processing error: {e}")
+
     async def safe_listen():
         try:
             await subscriber.listen()
@@ -128,6 +140,7 @@ async def main(
     await asyncio.gather(
         safe_capture(),
         safe_aggregate(),
+        safe_consume_input(),
         safe_listen(),
         safe_listen_uart(),
         # TODO: waiting on remote location definition for model updates

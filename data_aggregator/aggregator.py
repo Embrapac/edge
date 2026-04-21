@@ -21,6 +21,7 @@ class AggregatedEvent:
 @dataclass
 class ActuatorEvent:
     timestamp: datetime
+    operation: str
     command: str
     parameters: dict = field(default_factory=dict)
 
@@ -29,9 +30,11 @@ class DataAggregator:
         self,
         detection_queue: asyncio.Queue,
         output_queue: asyncio.Queue,
+        input_queue: asyncio.Queue | None = None,
         timestamp_tolerance_sec: float = Config.DEFAULT_TIMESTAMP_TOLERANCE_SEC,
     ):
         self._detection_queue = detection_queue
+        self._input_queue = input_queue or asyncio.Queue()
         self._output_queue = output_queue
         self._latest_detections = []
         self._timestamp_tolerance_sec = timestamp_tolerance_sec
@@ -48,11 +51,36 @@ class DataAggregator:
 
     async def process_pubsub_event(self, event: dict):
         logger.debug("Start processing Pub/Sub event data received")
+        parameters = event.get("parameters", {})
+        if not isinstance(parameters, dict):
+            logger.warning(f"Ignoring Pub/Sub event with invalid parameters payload: {event}")
+            return
+
         aggregated = ActuatorEvent(
             timestamp=datetime.now(timezone.utc),
-            command=event.get("command", "unknown"),
-            parameters=event.get("parameters", {}),
+            operation=event.get("operation", "unknown"),
+            command=str(parameters.get("command", "")).strip(),
+            parameters=parameters,
         )
+        await self._input_queue.put(aggregated)
+
+    async def consume_input_events(self, uart_publisher):
+        while True:
+            actuator_event = await self._input_queue.get()
+            logger.info(
+                "Processing input queue event: "
+                f"operation={actuator_event.operation}, command={actuator_event.command}"
+            )
+            if not actuator_event.command:
+                logger.warning(f"Ignoring actuator event without command: {actuator_event}")
+                continue
+
+            published = uart_publisher.publish_command(
+                actuator_event.operation,
+                actuator_event.command,
+            )
+            if not published:
+                logger.warning(f"Ignoring unsupported actuator event: {actuator_event}")
 
     async def process_uart_event(self, event: dict):
         logger.debug("Start processing UART event data received")
