@@ -5,6 +5,7 @@ class EventBus:
     def __init__(self):
         self._subscribers = []
         self.detection_queue = asyncio.Queue()
+        self.input_queue = asyncio.Queue()
         self.output_queue = asyncio.Queue()
 
     def subscribe(self, callback):

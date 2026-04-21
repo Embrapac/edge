@@ -8,7 +8,7 @@ from video_buffer.buffer_manager import VideoBufferManager
 from video_buffer.capture_writer import CaptureWriter
 from data_aggregator.aggregator import DataAggregator
 from data_aggregator.subscriber import PubSubSubscriber, PubSubPublisher
-from data_aggregator.uart_subscriber import UARTSubscriber
+from data_aggregator.uart_subscriber import UARTPublisher, UARTSubscriber
 from inference.model_manager import ModelManager
 from inference.model_manager import ModelFetcher
 from config import Config
@@ -47,10 +47,16 @@ async def main(
     aggregator = DataAggregator(
         event_bus.detection_queue,
         event_bus.output_queue,
+        input_queue=event_bus.input_queue,
         timestamp_tolerance_sec=timestamp_tolerance_sec,
     )
     subscriber = PubSubSubscriber(broker_url, aggregator)
     publisher = PubSubPublisher(general_server_ip, mqtt_broker_port)
+    uart_publisher = UARTPublisher(
+        Config.UART_PORT,
+        Config.UART_BAUDRATE,
+        timeout=Config.UART_TIMEOUT,
+    )
     uart_subscriber = UARTSubscriber(
         Config.UART_PORT,
         Config.UART_BAUDRATE,
@@ -90,10 +96,12 @@ async def main(
                 logger.info(f"Storing aggregated data: {aggregated}")
                 # TODO: Implement local storage logic
                 publisher.publish(Config.MQTT_TOPIC_METRICS, json.dumps(aggregated.computed_metrics))
-                publisher.publish(Config.MQTT_TOPIC_DATA_DETECTIONS, json.dumps({
-                    "detected_class": aggregated.computed_metrics.get("mcu_class"),
-                    "mcu_timestamp": aggregated.computed_metrics.get("mcu_timestamp"),
-                }))
+                # Only publish detection counts if MCU class was identified
+                if aggregated.computed_metrics.get("mcu_class"):
+                    publisher.publish(Config.MQTT_TOPIC_DATA_DETECTIONS, json.dumps({
+                        "detected_class": aggregated.computed_metrics.get("mcu_class"),
+                        "mcu_timestamp": aggregated.computed_metrics.get("mcu_timestamp"),
+                    }))
             except Exception as e:
                 logger.error(f"Error processing output: {e}")
 
@@ -109,6 +117,12 @@ async def main(
             await aggregator.consume_detections()
         except Exception as e:
             logger.error(f"Aggregator error: {e}")
+
+    async def safe_consume_input():
+        try:
+            await aggregator.consume_input_events(uart_publisher)
+        except Exception as e:
+            logger.error(f"Input queue processing error: {e}")
 
     async def safe_listen():
         try:
@@ -128,6 +142,7 @@ async def main(
     await asyncio.gather(
         safe_capture(),
         safe_aggregate(),
+        safe_consume_input(),
         safe_listen(),
         safe_listen_uart(),
         # TODO: waiting on remote location definition for model updates

@@ -19,12 +19,34 @@ class PubSubSubscriber:
     def on_message(self, client, userdata, message):
         try:
             payload = json.loads(message.payload.decode())
+            topic = message.topic
+            logger.info(f"Received MQTT message on topic '{topic}': {payload}")
             # Schedule async method in the event loop from another thread
             if self.loop:
-                logger.debug("Pub/Sub event received")
-                asyncio.run_coroutine_threadsafe(self.aggregator.process_pubsub_event(payload), self.loop)
+                normalized_event = self._normalize_event(topic, payload)
+                if normalized_event is None:
+                    logger.warning(f"Received message on unhandled topic '{topic}', ignoring.")
+                    return
+                asyncio.run_coroutine_threadsafe(self.aggregator.process_pubsub_event(normalized_event), self.loop)
         except Exception as e:
             logger.error(f"Error processing message: {e}")
+
+    def _normalize_event(self, topic, payload):
+        if not isinstance(payload, dict):
+            logger.warning(f"Ignoring MQTT payload with unexpected format on topic '{topic}': {payload}")
+            return None
+
+        if topic == Config.MQTT_TOPIC_CBELT_STATUS:
+            command = payload.get("command") or payload.get("comando")
+            return {
+                "operation": "control_cbelt",
+                "parameters": {
+                    **payload,
+                    "command": command,
+                },
+            }
+
+        return None
 
     async def listen(self):
         # Parse broker URL (assuming format mqtt://host:port)
@@ -39,7 +61,7 @@ class PubSubSubscriber:
         self.client = mqtt.Client()
         self.client.on_message = self.on_message
         self.client.connect(host, port)
-        self.client.subscribe(Config.MQTT_TOPIC_DETECTIONS)
+        self.client.subscribe(Config.MQTT_TOPIC_CBELT_STATUS)
         self.loop = asyncio.get_event_loop()
         self.client.loop_start()
 
