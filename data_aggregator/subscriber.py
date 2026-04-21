@@ -39,7 +39,7 @@ class PubSubSubscriber:
         self.client = mqtt.Client()
         self.client.on_message = self.on_message
         self.client.connect(host, port)
-        self.client.subscribe(Config.MQTT_TOPIC_DETECTIONS)
+        self.client.subscribe(Config.MQTT_TOPIC_CBELT_STATUS)
         self.loop = asyncio.get_event_loop()
         self.client.loop_start()
 

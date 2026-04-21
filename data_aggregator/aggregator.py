@@ -14,9 +14,15 @@ TS_FMT = "%Y-%m-%d %H:%M:%S.%f"
 @dataclass
 class AggregatedEvent:
     timestamp: datetime
-    pubsub_data: dict
+    uart_data: dict
     detections: list = field(default_factory=list)
     computed_metrics: dict = field(default_factory=dict)
+
+@dataclass
+class ActuatorEvent:
+    timestamp: datetime
+    command: str
+    parameters: dict = field(default_factory=dict)
 
 class DataAggregator:
     def __init__(
@@ -40,12 +46,19 @@ class DataAggregator:
                 self._latest_detections.append(camera_detection)
                 logger.debug(f"Updated latest detections: {self._latest_detections}")
 
-
     async def process_pubsub_event(self, event: dict):
-        logger.debug("Start processing event data received")
+        logger.debug("Start processing Pub/Sub event data received")
+        aggregated = ActuatorEvent(
+            timestamp=datetime.now(timezone.utc),
+            command=event.get("command", "unknown"),
+            parameters=event.get("parameters", {}),
+        )
+
+    async def process_uart_event(self, event: dict):
+        logger.debug("Start processing UART event data received")
         aggregated = AggregatedEvent(
             timestamp=datetime.now(timezone.utc),
-            pubsub_data=event,
+            uart_data=event,
             detections=self._latest_detections.copy(),
         )
         aggregated.computed_metrics = self._calculate(aggregated)
@@ -54,16 +67,16 @@ class DataAggregator:
 
     def _calculate(self, event: AggregatedEvent) -> dict:
         # Ex: contagem de objetos, score médio, correlação com dados MQTT
-        logger.info(f"Calculating metrics for event with {len(event.detections)} detections and pubsub data: {event.pubsub_data}")
+        logger.info(f"Calculating metrics for event with {len(event.detections)} detections and UART data: {event.uart_data}")
 
         for d in event.detections:
             logger.debug(f"Detection - class: {d.object_class}, confidence: {d.confidence}, timestamp: {datetime.fromtimestamp(d.timestamp).strftime(TS_FMT)}")
         camera_detection_metrics = self._compute_camera_detection_metrics(event.detections)
 
-        for key, value in event.pubsub_data.items():
-            logger.debug(f"PubSub data - {key}: {value}")
-        mcu_detection_class = event.pubsub_data.get('class', 'unknown')
-        mcu_detection_timestamp = event.pubsub_data.get('timestamp')
+        for key, value in event.uart_data.items():
+            logger.debug(f"UART data - {key}: {value}")
+        mcu_detection_class = event.uart_data.get('class', 'unknown')
+        mcu_detection_timestamp = event.uart_data.get('timestamp')
 
         # Cross-check: class agreement
         class_match = mcu_detection_class == camera_detection_metrics.get('dominant_class')

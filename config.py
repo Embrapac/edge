@@ -26,7 +26,6 @@ class Config:
     FRAME_STREAM_QUALITY = 70           # JPEG quality for frame streaming
 
     # MQTT topics
-    MQTT_TOPIC_DETECTIONS = "embrapac/edge/mcu-data"
     MQTT_TOPIC_METRICS = "embrapac/edge/aggregated-metrics"
     MQTT_TOPIC_DATA_DETECTIONS = "embrapac/edge/count"
     MQTT_TOPIC_CBELT_STATUS = "embrapac/edge/cbelt"
