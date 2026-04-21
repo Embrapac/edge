@@ -39,7 +39,7 @@ class PubSubSubscriber:
         if topic == Config.MQTT_TOPIC_CBELT_STATUS:
             command = payload.get("command") or payload.get("comando")
             return {
-                "operation": "update_cbelt_status",
+                "operation": "control_cbelt",
                 "parameters": {
                     **payload,
                     "command": command,
