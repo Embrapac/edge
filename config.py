@@ -33,7 +33,7 @@ class Config:
     MQTT_PUBLISHER_PORT = DEFAULT_MQTT_BROKER_PORT
 
     UART_COMMAND_ENCODINGS = {
-        ("control_cbelt", "START"): "00100000",
+        ("control_cbelt", "START"): "10000000",
         ("control_cbelt", "STOP"):  "00100000",
         ("control_cbelt", "EMERGENCY"): "01000000",
         ("control_cbelt", "RESET"):     "01010000",
