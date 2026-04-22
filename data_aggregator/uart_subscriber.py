@@ -66,10 +66,10 @@ class UARTSubscriber:
         logger.debug(f"Converting UART payload: {payload}")
         detected_class = None
         state = 'NORMAL'
-        status = 'ON'
+        status = None
         if payload == '10000000':
-            logger.warn('Received UART payload: no detections')
-            return None
+            logger.warn('Received UART payload: no detections, system online')
+            status = 'ON'
         elif payload == '10000001':
             logger.info('Received UART payload: detected P')
             detected_class = 'Pequena'
@@ -79,19 +79,19 @@ class UARTSubscriber:
         elif payload == '10000011':
             logger.info('Received UART payload: detected G')
             detected_class = 'Grande'
-        elif payload == '01000000' or payload == '01010000':
+        elif payload == '01000000':
             logger.info('Received UART payload: emergency state')
             state = 'EMERGENCY'
         elif payload == '00100000':
-            logger.info('Received UART payload: system online/offline')
-            status = 'ON/OFF'
+            logger.info('Received UART payload: system offline')
+            status = 'OFF'
         else:
             logger.warning(f"Received UART payload with unknown format: {payload}")
             return None
         return {
             "source": "uart",
             "class": detected_class,
-            "system": state,
+            "state": state,
             "status": status,
             "timestamp": timestamp
         }
