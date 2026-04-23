@@ -106,10 +106,12 @@ async def main(
                     publisher.publish(Config.MQTT_TOPIC_CBELT_ACTUATOR, json.dumps({
                         "status": aggregated.uart_data.get("status"),
                         "state": aggregated.uart_data.get("state"),
+                        "timestamp": aggregated.get("timestamp"),
                     }))
                 if aggregated.uart_data.get("state") == "EMERGENCY":
                     publisher.publish(Config.MQTT_TOPIC_CBELT_ACTUATOR, json.dumps({
                         "state": aggregated.uart_data.get("state"),
+                        "timestamp": aggregated.get("timestamp"),
                     }))
             except Exception as e:
                 logger.error(f"Error processing output: {e}")
