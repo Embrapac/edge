@@ -29,6 +29,7 @@ class Config:
     MQTT_TOPIC_METRICS = "embrapac/edge/aggregated-metrics"
     MQTT_TOPIC_DATA_DETECTIONS = "embrapac/edge/count"
     MQTT_TOPIC_CBELT_STATUS = "embrapac/edge/cbelt"
+    MQTT_TOPIC_CBELT_ACTUATOR = "embrapac/edge/cbelt/status"
     MQTT_PUBLISHER_HOST = DEFAULT_GENERAL_SERVER_IP
     MQTT_PUBLISHER_PORT = DEFAULT_MQTT_BROKER_PORT
 
