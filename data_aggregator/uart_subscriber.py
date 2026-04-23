@@ -67,22 +67,22 @@ class UARTSubscriber:
         detected_class = None
         state = 'NORMAL'
         status = None
-        if payload == '10000000':
+        if payload == b'\x80':  # 10000000
             logger.warn('Received UART payload: no detections, system online')
             status = 'START'
-        elif payload == '10000001':
+        elif payload == b'\x81':  # 10000001
             logger.info('Received UART payload: detected P')
             detected_class = 'Pequena'
-        elif payload == '10000010':
+        elif payload == b'\x82':  # 10000010
             logger.info('Received UART payload: detected M')
             detected_class = 'Media'
-        elif payload == '10000011':
+        elif payload == b'\x83':  # 10000011
             logger.info('Received UART payload: detected G')
             detected_class = 'Grande'
-        elif payload == '01000000':
+        elif payload == b'\x40':  # 01000000
             logger.info('Received UART payload: emergency state')
             state = 'EMERGENCY'
-        elif payload == '00100000':
+        elif payload == b'\x20':  # 00100000
             logger.info('Received UART payload: system offline')
             status = 'STOP'
         else:
@@ -127,14 +127,14 @@ class UARTSubscriber:
 
                 raw_frame = bytes(rx_frame)
                 logger.debug(f"Raw UART frame received: {raw_frame}")
-                line = raw_frame.decode("utf-8", errors="ignore").strip()
-                logger.debug(f"Decoded UART frame: {line}")
+                # line = raw_frame.decode("utf-8", errors="ignore").strip()
+                #logger.debug(f"Decoded UART frame: {line}")
                 rx_frame.clear()
                 last_rx_time = None
 
-                if not line:
-                    logger.warning("Ignoring empty UART frame after decoding.")
-                    continue
+                # if not line:
+                #     logger.warning("Ignoring empty UART frame after decoding.")
+                #     continue
                 
                 # payload = self._parse_line(line)
                 # if not payload:
@@ -142,12 +142,12 @@ class UARTSubscriber:
                 #     continue
                 # payload.setdefault("source", "uart")
 
-                event_payload = self._convert_UART_payload(line, now)
+                event_payload = self._convert_UART_payload(raw_frame, now)
                 logger.info(f"Transformed UART payload: {event_payload}")
                 if event_payload:
                     await self.aggregator.process_uart_event(event_payload)
                 else:
-                    logger.warning(f"UART line could not be converted to event payload: {line}, skipping.")
+                    logger.warning(f"UART line could not be converted to event payload: {raw_frame}, skipping.")
             except Exception as e:
                 logger.error(f"UART subscriber error while reading/parsing: {e}")
                 await asyncio.sleep(0.5)
