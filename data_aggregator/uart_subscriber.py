@@ -82,7 +82,7 @@ class UARTSubscriber:
         elif payload == b'\x40':  # 01000000
             logger.info('Received UART payload: emergency state')
             state = 'EMERGENCY'
-        elif payload == b'\x20':  # 00100000
+        elif payload == b'\x00':  # 00000000
             logger.info('Received UART payload: system offline')
             status = 'STOP'
         else:
