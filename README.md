@@ -13,6 +13,12 @@ Repositório para o módulo EDGE, responsável pela captura de vídeo, processam
 
 ## 📦 Arquitetura do Projeto
 
+Diagrama do event stream em SVG:
+
+[![Diagrama do event stream do EDGE](https://raw.githubusercontent.com/Embrapac/diagramas/main/diagramas_svg/DS-EDGE-EVENTSTREAM-001.svg)](https://github.com/Embrapac/diagramas/tree/main/diagramas_svg/DS-EDGE-EVENTSTREAM-001.svg)
+
+Estrutura de arquivos do módulo EDGE:
+
 ```
 edge/
 ├── video_buffer/          # 🎥 Gerenciamento de captura e buffer de vídeo
